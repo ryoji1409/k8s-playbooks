@@ -1,0 +1,54 @@
+---
+# https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
+- name: Install Cilium using Helm
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+  when: "inventory_hostname == ansible_play_hosts_all[0] and (cni_plugin) == 'cilium'"
+  vars:
+    cni_plugin: "{{ cni | default('no') }}"
+  block:
+    - name: Add Cilium Helm repository
+      kubernetes.core.helm_repository:
+        name: cilium
+        repo_url: "{{ cilium_helm_repo }}"
+        state: present
+
+    - name: Install Cilium via Helm (idempotent)
+      kubernetes.core.helm:
+        name: cilium
+        chart_ref: "{{ cilium_helm_chart }}"
+        chart_version: "{{ cilium_version }}"
+        release_namespace: "{{ cilium_namespace }}"
+        create_namespace: true
+        values:
+          kubeProxyReplacement: "{{ replacement_status }}"
+          k8sServiceHost: "{{ kube_api_endpoint }}"
+          k8sServicePort: "{{ kube_api_endpoint_port }}"
+          ipam:
+            operator:
+              clusterPoolIPv4PodCIDRList: "{{ pod_network_cidr }}"
+            mode: kubernetes
+          labels: "k8s:!job-name k8s:!batch.kubernetes.io/job-name"
+        state: present
+
+# Pod CIDR must be set to 10.244.0.0/16
+# https://github.com/flannel-io/flannel
+- name: Install flannel
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+  when: "inventory_hostname == ansible_play_hosts_all[0] and (cni_plugin) == 'flannel'"
+  ansible.builtin.shell: "kubectl apply -f https://github.com/flannel-io/flannel/releases/{{ flannel_version }}/download/kube-flannel.yml"
+  changed_when: false
+  vars:
+    cni_plugin: "{{ cni | default('no') }}"
+
+# Pod CIDR must be set to 10.244.0.0/16
+# https://docs.tigera.io/calico/latest/getting-started/kubernetes/flannel/install-for-flannel
+- name: Install canal
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+  when: "inventory_hostname == ansible_play_hosts_all[0] and (cni_plugin) == 'canal'"
+  ansible.builtin.shell: "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/canal.yaml"
+  changed_when: false
+  vars:
+    cni_plugin: "{{ cni | default('no') }}"

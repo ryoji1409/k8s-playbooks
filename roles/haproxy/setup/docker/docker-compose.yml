@@ -1,0 +1,21 @@
+---
+services:
+  proxy:
+    container_name: 'haproxy'
+    image: haproxy:2.8.2-alpine3.18
+    ports:
+      - '6443:6443'
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - /usr/share/zoneinfo/Asia/Tokyo:/etc/localtime:ro
+    restart: always
+  node-exporter:
+    image: 'quay.io/prometheus/node-exporter:v1.6.1'
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+    network_mode: host
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'

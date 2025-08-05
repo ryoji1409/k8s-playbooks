@@ -1,0 +1,32 @@
+---
+- name: Download k8s GPG key
+  ansible.builtin.shell: |
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ public_key_k8s_version }}/deb/Release.key | \
+    sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  changed_when: false
+  tags:
+    - upgrade
+
+- name: Apt add kubernetes repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg]
+      https://pkgs.k8s.io/core:/stable:/{{ k8s_version }}/deb/ /
+    filename: kubernetes
+    state: present
+  tags:
+    - upgrade
+
+- name: Apt install kube packages
+  ansible.builtin.apt:
+    name: ["kubelet={{ k8s_component_version }}-*", "kubeadm={{ k8s_component_version }}-*", "kubectl={{ k8s_component_version }}-*"]
+    update_cache: true
+
+- name: Apt mark hold kube packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl

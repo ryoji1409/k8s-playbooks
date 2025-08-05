@@ -1,0 +1,54 @@
+---
+control_plane_endpoint: 10.0.0.1  # e.g. keepalived virtual_ip
+pod_network_cidr: 10.244.0.0/16
+service_network_cidr: 10.96.0.0/12
+kube_api_endpoint: control.plane.endpoint
+kube_api_endpoint_port: 6443
+
+cilium_namespace: kube-system
+cilium_helm_repo: https://helm.cilium.io/
+cilium_helm_chart: cilium/cilium
+replacement_status: false  # true: without kube-proxy
+
+kube_control_plane:
+  control_plane01:
+    host_name: control_plane01
+    public_ip:
+    private_ip: 10.0.0.5
+  control_plane02:
+    host_name: control_plane02
+    public_ip:
+    private_ip: 10.0.0.6
+kube_node:
+  node01:
+    host_name: node01
+    public_ip:
+    private_ip: 10.0.0.8
+  node02:
+    host_name: node02
+    public_ip:
+    private_ip: 10.0.0.9
+  node03:
+    host_name: node03
+    public_ip:
+    private_ip: 10.0.0.10
+  node04:
+    host_name: node04
+    public_ip:
+    private_ip: 10.0.0.11
+haproxy:
+  proxy01:
+    host_name: proxy01
+    public_ip:
+    private_ip: 10.0.0.12
+    keepalived_role: master
+  proxy02:
+    host_name: proxy02
+    public_ip:
+    private_ip: 10.0.0.13
+    keepalived_role: backup
+rancher_admin:
+  rancher_admin01:
+    host_name: rancher_admin01
+    public_ip:
+    private_ip: 10.0.0.14

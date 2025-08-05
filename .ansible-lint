@@ -1,0 +1,5 @@
+skip_list:
+  - role-name[path]
+  - command-instead-of-shell
+  - command-instead-of-module
+  - risky-shell-pipe

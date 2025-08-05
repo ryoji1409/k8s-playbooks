@@ -1,0 +1,64 @@
+---
+- name: Create directory for haproxy
+  ansible.builtin.file:
+    path: /root/haproxy
+    owner: root
+    recurse: true
+    state: directory
+
+- name: Copy haproxy docker-compose file
+  ansible.builtin.copy:
+    src: docker/docker-compose.yml
+    dest: /root/haproxy
+    mode: '0644'
+
+- name: Copy haproxy setting file
+  ansible.builtin.template:
+    src: setting/haproxy.cfg.tpl
+    dest: /root/haproxy/haproxy.cfg
+    mode: '0644'
+
+- name: Apt install keepalived
+  ansible.builtin.apt:
+    name: 'keepalived'
+    update_cache: true
+
+- name: Copy keepalived file
+  ansible.builtin.copy:
+    src: setting/keepalived/master/keepalived.conf
+    dest: /etc/keepalived
+    mode: '0644'
+  when: "'haproxy_master' in group_names"
+
+- name: Copy keepalived file
+  ansible.builtin.copy:
+    src: setting/keepalived/backup/keepalived.conf
+    dest: /etc/keepalived
+    mode: '0644'
+  when: "'haproxy_backup' in group_names"
+
+- name: Ensure docker SDK are installed (Debian)
+  ansible.builtin.apt:
+    name:
+      - python3-docker
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Ensure pip are installed (RedHat)
+  ansible.builtin.dnf:
+    name:
+      - python3-pip
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install Docker SDK for Python
+  ansible.builtin.pip:
+    name: docker
+    executable: pip3
+  when: ansible_os_family == "RedHat"
+
+- name: Start containers with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: /root/haproxy
+    state: present

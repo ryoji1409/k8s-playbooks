@@ -1,0 +1,8 @@
+---
+- name: Remove nodes
+  hosts: kube_control_plane,!kube_control_plane[0],kube_node
+  become: true
+  become_user: root
+  roles:
+    - role: kubeadm/remove-node
+  serial: 1

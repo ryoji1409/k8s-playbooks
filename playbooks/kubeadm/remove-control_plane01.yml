@@ -1,0 +1,9 @@
+# This task should be executed only after all nodes have been removed from k8s cluster using remove-nodes.yml
+---
+- name: Remove control plane01
+  hosts: kube_control_plane[0]
+  become: true
+  become_user: root
+  roles:
+    - role: kubeadm/remove-node
+  serial: 1

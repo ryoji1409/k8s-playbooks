@@ -1,0 +1,12 @@
+---
+- name: Setup ssh keys
+  hosts: all
+  become: true
+  become_user: root
+  roles:
+    - role: ubuntu/ssh-authorized-keys
+  vars:
+    # Specify the target user and public key path as extra-vars:
+    # -e "user=youruser" -e "key=/path/to/id_rsa.pub"
+    ssh_user: "{{ user }}"
+    ssh_pubkey: "{{ lookup('file', '{{ key }}') }}"

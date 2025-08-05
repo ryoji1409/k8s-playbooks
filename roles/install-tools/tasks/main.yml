@@ -1,0 +1,162 @@
+---
+- name: Install kubectl
+  when: "'kube_control_plane' in group_names"
+  block:
+    - name: Check if kubectl package is managed by apt
+      ansible.builtin.shell: dpkg -s kubectl
+      register: kubectl_check_apt
+      failed_when: false
+      changed_when: false
+
+    - name: Show current kubectl version (if exists)
+      ansible.builtin.debug:
+        msg: "kubectl already installed by apt : {{ kubectl_check_apt.stdout }}"
+      when: kubectl_check_apt.rc == 0
+
+    - name: Get latest stable kubectl version if not specified
+      ansible.builtin.uri:
+        url: https://dl.k8s.io/release/stable.txt
+        return_content: true
+      register: stable_version
+      when:
+        - kubectl_check_apt.rc != 0
+        - kubectl_version == ""
+
+    - name: Set kubectl_version fact
+      ansible.builtin.set_fact:
+        kubectl_version: "{{ stable_version.stdout }}"
+      when:
+        - kubectl_check_apt.rc != 0
+        - kubectl_version == ""
+
+    - name: Download kubectl binary
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ arch_map[ansible_architecture] }}/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+      when:
+        - kubectl_check_apt.rc != 0
+
+    - name: Verify kubectl version
+      ansible.builtin.command: kubectl version --client
+      register: kubectl_final
+      changed_when: false
+      when:
+        - kubectl_check_apt.rc != 0
+
+    - name: Show installed kubectl version
+      ansible.builtin.debug:
+        msg: "{{ kubectl_final.stdout }}"
+      when:
+        - kubectl_check_apt.rc != 0
+    - name: Ensure kubectl bash completion is enabled in .bashrc
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        regexp: 'source <\(kubectl completion bash\)'
+        line: 'source <(kubectl completion bash)'
+        state: present
+        insertafter: EOF
+      when:
+        - kubectl_check_apt.rc != 0
+
+- name: Install nerdctl
+  block:
+    - name: Install nerdctl
+      ansible.builtin.get_url:
+        url: "https://github.com/containerd/nerdctl/releases/download/v{{ nerdctl_version }}/nerdctl-{{ nerdctl_version }}-linux-{{ arch_map[ansible_architecture] }}.tar.gz"
+        dest: /root
+        mode: '0644'
+
+    - name: Unarchive nerdctl
+      ansible.builtin.unarchive:
+        src: /root/nerdctl-{{ nerdctl_version }}-linux-{{ arch_map[ansible_architecture] }}.tar.gz
+        dest: /root
+        remote_src: true
+
+    - name: Move nerdctl binary
+      ansible.builtin.copy:
+        src: /root/nerdctl
+        dest: /usr/local/bin
+        remote_src: true
+        mode: '0755'
+
+    - name: Remove useless nerdctl files
+      ansible.builtin.file:
+        path: "/root/{{ item }}"
+        state: absent
+      with_items:
+        - "nerdctl"
+        - "containerd-rootless.sh"
+        - "containerd-rootless-setuptool.sh"
+        - "nerdctl-{{ nerdctl_version }}-linux-{{ arch_map[ansible_architecture] }}.tar.gz"
+
+- name: Install etcdctl
+  when: "'kube_control_plane' in group_names"
+  block:
+    - name: Install etcdctl
+      ansible.builtin.get_url:
+        url: https://github.com/etcd-io/etcd/releases/download/v{{ etcd_version }}/etcd-v{{ etcd_version }}-linux-{{ arch_map[ansible_architecture] }}.tar.gz
+        dest: /root
+        mode: '0644'
+
+    - name: Unarchive etcdctl
+      ansible.builtin.unarchive:
+        src: /root/etcd-v{{ etcd_version }}-linux-{{ arch_map[ansible_architecture] }}.tar.gz
+        dest: /root
+        remote_src: true
+
+    - name: Move etcdctl binary
+      ansible.builtin.copy:
+        src: /root/etcd-v{{ etcd_version }}-linux-{{ arch_map[ansible_architecture] }}/etcdctl
+        dest: /usr/local/bin
+        remote_src: true
+        mode: '0755'
+
+    - name: Remove useless etcdctl files
+      ansible.builtin.file:
+        path: "/root/{{ item }}"
+        state: absent
+      with_items:
+        - "etcd-v{{ etcd_version }}-linux-{{ arch_map[ansible_architecture] }}"
+        - "etcd-v{{ etcd_version }}-linux-{{ arch_map[ansible_architecture] }}.tar.gz"
+
+- name: Install helm
+  when: "'kube_control_plane' in group_names"
+  block:
+    - name: Check helm.gpg exists
+      ansible.builtin.stat:
+        path: /usr/share/keyrings/helm.gpg
+        get_checksum: false
+      register: helm_gpg
+
+    - name: Download helm GPG key
+      ansible.builtin.shell: curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+      changed_when: false
+      when:
+        - not helm_gpg.stat.exists
+
+    - name: Add helm repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ arch_map[ansible_architecture] }} signed-by=/usr/share/keyrings/helm.gpg]
+          https://baltocdn.com/helm/stable/debian/ all main
+        filename: helm-stable-debian
+        state: present
+
+    - name: Install helm
+      ansible.builtin.apt:
+        name: "helm"
+        update_cache: true
+
+- name: Install Cilium CLI
+  ansible.builtin.shell: |
+    CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+    CLI_ARCH=amd64
+    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+    curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+    sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+    sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+    rm cilium-linux-${CLI_ARCH}.tar.gz
+    rm cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+  changed_when: false
+  when: "'kube_control_plane' in group_names"

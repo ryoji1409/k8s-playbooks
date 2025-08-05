@@ -1,0 +1,8 @@
+---
+- name: Join nodes
+  hosts: kube_control_plane,kube_node
+  become: true
+  become_user: root
+  roles:
+    - role: kubeadm/join-node
+  serial: 1

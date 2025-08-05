@@ -1,0 +1,17 @@
+---
+- name: Upgrade k8s cluster
+  hosts: kube_control_plane,kube_node
+  become: true
+  become_user: root
+  roles:
+    - role: kubeadm/validate
+      tags: upgrade
+    - role: kubeadm/install-k8s-packages
+    - role: kubeadm/upgrade-kubeadm
+      tags: upgrade
+    - role: kubeadm/upgrade-nodes
+  serial: 1
+  vars:
+    k8s_version: "{{ apply_k8s_version | regex_search ('v[0-9]+\\.[0-9]+') }}"
+    k8s_component_version: "{{ apply_k8s_version | regex_search ('[0-9]+\\.[0-9]+\\.[0-9]+') }}"
+    public_key_k8s_version: "{{ apply_k8s_version | regex_search ('v[0-9]+\\.[0-9]+') }}"

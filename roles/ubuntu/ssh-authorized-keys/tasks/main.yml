@@ -1,0 +1,46 @@
+---
+- name: Validate variables defined or not
+  ansible.builtin.fail:
+    msg: "Aborted!! 'user', 'key' is need!"
+  changed_when: false
+  when: (user is not defined and inventory_hostname == ansible_play_hosts_all[0]) or (key is not defined and inventory_hostname == ansible_play_hosts_all[0])
+
+- name: Confirm ssh_user/ssh_pubkey
+  ansible.builtin.debug:
+    msg:
+      - User：{{ ssh_user }}
+      - Public Key：{{ ssh_pubkey }}
+  changed_when: false
+  when: inventory_hostname == ansible_play_hosts_all[0]
+
+- name: Set up SSH public key authentication and disable password login
+  block:
+    - name: Add authorized public key
+      ansible.posix.authorized_key:
+        user: "{{ ssh_user }}"
+        key: "{{ ssh_pubkey }}"
+        state: present
+
+    - name: Disable password authentication in sshd_config
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+        backup: true
+
+    - name: Restart ssh service
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+      when:
+        - ansible_distribution == "Ubuntu"
+        - ansible_distribution_version == "24.04"
+
+    - name: Restart sshd service
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      when:
+        - ansible_distribution == "Ubuntu"
+        - ansible_distribution_version is version('22.04', '<=')

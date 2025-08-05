@@ -1,0 +1,19 @@
+---
+- name: Setup k8s nodes
+  hosts: kube_control_plane,kube_node
+  become: true
+  become_user: root
+  roles:
+    - role: kubeadm/validate
+    - role: setup
+    - role: kubeadm/install-containerd
+    - role: kubeadm/install-k8s-packages
+    - role: install-tools
+  vars:
+    containerd_version: "1.7.27-1"  # apt-cache madison containerd.io
+    nerdctl_version: "2.1.3"  # https://github.com/containerd/nerdctl/releases
+    etcd_version: "3.6.2"  # https://github.com/etcd-io/etcd/releases
+    apply_k8s_version: "v1.33.2"  # https://kubernetes.io/releases/
+    k8s_version: "{{ apply_k8s_version | regex_search ('v[0-9]+\\.[0-9]+') }}"
+    k8s_component_version: "{{ apply_k8s_version | regex_search ('[0-9]+\\.[0-9]+\\.[0-9]+') }}"
+    public_key_k8s_version: "{{ apply_k8s_version | regex_search ('v[0-9]+\\.[0-9]+') }}"

@@ -1,0 +1,9 @@
+---
+- name: Setup haproxy
+  hosts: haproxy
+  become: true
+  become_user: root
+  roles:
+    - role: docker/setup
+    - role: haproxy/setup
+  serial: 1

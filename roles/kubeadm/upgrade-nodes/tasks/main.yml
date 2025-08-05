@@ -1,0 +1,138 @@
+---
+- name: Upgrade K8s first control plane node
+  when: "'kube_control_plane' in group_names"
+  tags:
+    - first-control-plane-node
+  block:
+    - name: Check for upgradeability
+      ansible.builtin.shell: kubeadm upgrade plan
+      changed_when: false
+      register: upgrade_plan_log
+
+    - name: Show upgrade plan log
+      ansible.builtin.debug:
+        msg: "{{ upgrade_plan_log.stdout_lines }}"
+
+    - name: Upgrade K8s first control plane node
+      ansible.builtin.shell: kubeadm upgrade apply {{ apply_k8s_version }} -y
+      changed_when: false
+      register: upgrade_apply_log
+
+- name: Upgrade K8s other node
+  ansible.builtin.shell: kubeadm upgrade node
+  changed_when: false
+  register: upgrade_apply_log
+  tags:
+    - other-node
+
+- name: Show upgrade apply log
+  ansible.builtin.debug:
+    msg: "{{ upgrade_apply_log.stdout_lines }}"
+  tags:
+    - upgrade
+
+- name: Drain the node
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  tags:
+    - upgrade
+  block:
+    - name: Get node name
+      ansible.builtin.shell: kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}' | grep -i "{{ inventory_hostname }}"
+      register: kubectl_node_name
+      retries: 5
+      delay: 5
+      changed_when: false
+      until: kubectl_node_name.rc == 0
+
+    - name: Drain the node
+      ansible.builtin.command: kubectl drain {{ kubectl_node_name.stdout }} --ignore-daemonsets --delete-emptydir-data --force
+      register: drain_result
+      retries: 5
+      delay: 5
+      changed_when: false
+      until: drain_result.rc == 0
+
+    - name: Show drain result
+      ansible.builtin.debug:
+        msg: "{{ drain_result.stdout_lines }}"
+
+    - name: Wait drain completes
+      ansible.builtin.pause:
+        seconds: 10
+      when: "'kube_node' in group_names"
+
+    - name: Get node status
+      ansible.builtin.command: kubectl get nodes {{ kubectl_node_name.stdout }} -o wide
+      register: node_name_status
+      retries: 5
+      delay: 5
+      changed_when: false
+      until: node_name_status.rc == 0
+
+    - name: Show node status
+      ansible.builtin.debug:
+        msg: "{{ node_name_status.stdout_lines }}"
+
+- name: Unhold kubelet/kubectl
+  ansible.builtin.shell: apt-mark unhold kubelet kubectl
+  changed_when: false
+  tags:
+    - upgrade
+
+- name: Upgrade kubelet/kubectl
+  ansible.builtin.apt:
+    name: ["kubelet={{ k8s_component_version }}-*", "kubectl={{ k8s_component_version }}-*"]
+    update_cache: true
+  tags:
+    - upgrade
+
+- name: Hold kubelet/kubect1
+  ansible.builtin.shell: apt-mark hold kubelet kubectl
+  changed_when: false
+  tags:
+    - upgrade
+
+- name: Restart kubelet
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: true
+  tags:
+    - upgrade
+
+- name: Uncordon the node
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  tags:
+    - upgrade
+  block:
+    - name: Get node name
+      ansible.builtin.shell: kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}' | grep -i "{{ inventory_hostname }}"
+      register: kubectl_node_name
+      retries: 5
+      delay: 5
+      changed_when: false
+      until: kubectl_node_name.rc == 0
+
+    - name: Uncordon the node
+      ansible.builtin.command: kubectl uncordon {{ kubectl_node_name.stdout }}
+      register: uncordon_result
+      retries: 5
+      delay: 5
+      changed_when: false
+      until: uncordon_result.rc == 0
+
+    - name: Show uncordon result
+      ansible.builtin.debug:
+        msg: "{{ uncordon_result.stdout_lines }}"
+
+    - name: Get node status
+      ansible.builtin.command: kubectl get nodes {{ kubectl_node_name.stdout }} -o wide
+      register: node_name_status
+      retries: 5
+      delay: 5
+      changed_when: false
+      until: node_name_status.rc == 0
+
+    - name: Show node status
+      ansible.builtin.debug:
+        msg: "{{ node_name_status.stdout_lines }}"

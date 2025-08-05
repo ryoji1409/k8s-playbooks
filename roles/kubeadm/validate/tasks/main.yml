@@ -1,0 +1,33 @@
+---
+- name: Validate variables defined or not
+  ansible.builtin.fail:
+    msg: "Aborted!! 'apply_k8s_version' is need!"
+  changed_when: false
+  when: apply_k8s_version is not defined and inventory_hostname == ansible_play_hosts_all[0]
+
+- name: Validate variables format
+  vars:
+    validate_k8s_version: "{{ apply_k8s_version | regex_search('v[0-9]+\\.[0-9]+\\.[0-9]+$') }}"
+  ansible.builtin.assert:
+    that: "validate_k8s_version != ''"
+    fail_msg: "'apply_k8s_version' must be 'vx.y.z'"
+  changed_when: false
+  when: inventory_hostname == ansible_play_hosts_all[0]
+
+- name: Confirm K8s version
+  ansible.builtin.debug:
+    msg:
+      - =========================== Start to setup K8s cluster ===========================
+      - K8s version：{{ apply_k8s_version }}
+      - kubelet, kubeadm, kubectl version：{{ k8s_component_version }}-*
+      - sources.list.d ：{{ k8s_version }}
+      - public_key version：{{ public_key_k8s_version }}
+      - =========================== Start to setup K8s cluster ===========================
+  changed_when: false
+  when: inventory_hostname == ansible_play_hosts_all[0]
+
+- name: Confirmation grace period (5sec)
+  when: inventory_hostname == ansible_play_hosts_all[0]
+  ansible.builtin.pause:
+    seconds: 5
+  changed_when: false

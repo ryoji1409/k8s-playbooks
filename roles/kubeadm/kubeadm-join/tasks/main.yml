@@ -1,0 +1,76 @@
+---
+- name: Init K8s first control plane node
+  when: inventory_hostname == groups['kube_control_plane'][0]
+  vars:
+    cni_plugin: "{{ cni | default('no') }}"
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+  block:
+    - name: Init k8s cluster
+      ansible.builtin.shell: |
+        kubeadm init --control-plane-endpoint "{{ kube_api_endpoint }}:{{ kube_api_endpoint_port }}" --upload-certs \
+        --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].private_ip }}" \
+        {{ '--skip-phases=addon/kube-proxy' if (replacement_status | bool and cni_plugin == 'cilium') else '' }} --pod-network-cidr="{{ pod_network_cidr }}" \
+        --service-cidr="{{ service_network_cidr }}"
+      changed_when: false
+      register: kubeadm_init_log
+    - name: Show kubeadm init log
+      ansible.builtin.debug:
+        msg: "{{ kubeadm_init_log.stdout_lines }}"
+    - name: Setup kube config
+      ansible.builtin.shell: |
+        mkdir -p $HOME/.kube &&
+        sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config &&
+        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+      changed_when: false
+    - name: Ensure kubectl bash completion is enabled in .bashrc
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        regexp: 'source <\(kubectl completion bash\)'
+        line: 'source <(kubectl completion bash)'
+        state: present
+        insertafter: EOF
+    - name: Extract values from join command args
+      changed_when: false
+      ansible.builtin.set_fact:
+        kubeadm_token: "{{ kubeadm_init_log.stdout | regex_search('--token\\s+(\\S+)', '\\1') }}"
+        discovery_hash: "{{ kubeadm_init_log.stdout | regex_search('--discovery-token-ca-cert-hash\\s+(\\S+)', '\\1') }}"
+        certificate_key: "{{ kubeadm_init_log.stdout | regex_search('--certificate-key\\s+([a-f0-9]{64})', '\\1') }}"
+    - name: Confirm token
+      ansible.builtin.debug:
+        msg:
+          - kubeadm_token：{{ hostvars[groups['kube_control_plane'][0]].kubeadm_token[0] }}
+          - discovery_hash：{{ hostvars[groups['kube_control_plane'][0]].discovery_hash[0] }}
+          - certificate_key：{{ hostvars[groups['kube_control_plane'][0]].certificate_key[0] }}
+      changed_when: false
+
+- name: Join to k8s cluster control plane node
+  when: "'kube_control_plane' in group_names and inventory_hostname != groups['kube_control_plane'][0]"
+  block:
+    - name: Kubeadm join
+      ansible.builtin.shell: |
+        kubeadm join {{ kube_api_endpoint }}:{{ kube_api_endpoint_port }} --token {{ hostvars[groups['kube_control_plane'][0]].kubeadm_token[0] }} \
+          --discovery-token-ca-cert-hash {{ hostvars[groups['kube_control_plane'][0]].discovery_hash[0] }} \
+          --control-plane --certificate-key {{ hostvars[groups['kube_control_plane'][0]].certificate_key[0] }} \
+          --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].private_ip }}"
+      changed_when: false
+    - name: Setup kube config
+      ansible.builtin.shell: |
+        mkdir -p $HOME/.kube &&
+        sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config &&
+        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+      changed_when: false
+    - name: Ensure kubectl bash completion is enabled in .bashrc
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        regexp: 'source <\(kubectl completion bash\)'
+        line: 'source <(kubectl completion bash)'
+        state: present
+        insertafter: EOF
+
+- name: Join to k8s cluster
+  ansible.builtin.shell: |
+    kubeadm join {{ kube_api_endpoint }}:{{ kube_api_endpoint_port }} --token {{ hostvars[groups['kube_control_plane'][0]].kubeadm_token[0] }} \
+    	--discovery-token-ca-cert-hash {{ hostvars[groups['kube_control_plane'][0]].discovery_hash[0] }}
+  changed_when: false
+  when: "'kube_node' in group_names"

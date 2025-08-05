@@ -1,0 +1,46 @@
+---
+- name: Ensure docker SDK are installed (Debian)
+  ansible.builtin.apt:
+    name:
+      - python3-docker
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Ensure pip are installed (RedHat)
+  ansible.builtin.dnf:
+    name:
+      - python3-pip
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install Docker SDK for Python
+  ansible.builtin.pip:
+    name: docker
+    executable: pip3
+  when: ansible_os_family == "RedHat"
+
+- name: Create Rancher data directory
+  ansible.builtin.file:
+    path: "{{ rancher_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Pull Rancher Docker image
+  community.docker.docker_image:
+    name: "{{ rancher_docker_image }}"
+    source: pull
+
+- name: Run Rancher container
+  community.docker.docker_container:
+    name: rancher
+    image: "{{ rancher_docker_image }}"
+    restart_policy: unless-stopped
+    published_ports:
+      - "{{ rancher_http_port }}:80"
+      - "{{ rancher_https_port }}:443"
+    volumes:
+      - "{{ rancher_data_dir }}:/var/lib/rancher"
+    privileged: true
