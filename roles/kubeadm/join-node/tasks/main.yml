@@ -46,7 +46,7 @@
         kubeadm join {{ kube_api_endpoint }}:{{ kube_api_endpoint_port }} --token {{ hostvars[ansible_play_hosts_all[0]].kubeadm_token.stdout }} \
         --discovery-token-ca-cert-hash sha256:{{ hostvars[ansible_play_hosts_all[0]].discovery_token_ca_cert_hash.stdout }} \
         --control-plane --certificate-key {{ hostvars[ansible_play_hosts_all[0]].certificate_key }} \
-        --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].private_ip }}"
+        --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].internal_address }}"
       changed_when: false
     - name: Setup kube config
       ansible.builtin.shell: |

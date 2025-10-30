@@ -130,7 +130,7 @@
       register: helm_gpg
 
     - name: Download helm GPG key
-      ansible.builtin.shell: curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+      ansible.builtin.shell: curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
       changed_when: false
       when:
         - not helm_gpg.stat.exists
@@ -138,8 +138,7 @@
     - name: Add helm repository
       ansible.builtin.apt_repository:
         repo: >-
-          deb [arch={{ arch_map[ansible_architecture] }} signed-by=/usr/share/keyrings/helm.gpg]
-          https://baltocdn.com/helm/stable/debian/ all main
+          deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main
         filename: helm-stable-debian
         state: present
 
@@ -159,4 +158,6 @@
     rm cilium-linux-${CLI_ARCH}.tar.gz
     rm cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
   changed_when: false
-  when: "'kube_control_plane' in group_names"
+  when: "'kube_control_plane' in group_names and (cni_plugin) == 'cilium'" 
+  vars:
+    cni_plugin: "{{ cni | default('no') }}"

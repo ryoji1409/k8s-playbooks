@@ -58,14 +58,14 @@
 
 - name: Build host_entries list manually
   ansible.builtin.set_fact:
-    setup_host_entries: "{{ setup_host_entries | default([]) + [{'host_name': item.host_name, 'private_ip': item.private_ip}] }}"
+    setup_host_entries: "{{ setup_host_entries | default([]) + [{'host_name': item.host_name, 'internal_address': item.internal_address}] }}"
   loop: "{{ (kube_control_plane.values() | list) + (kube_node.values() | list) + (haproxy.values() | list) }}"
 
 - name: Add entries to /etc/hosts
   ansible.builtin.lineinfile:
     path: /etc/hosts
-    line: "{{ item.private_ip }} {{ item.host_name }}"
-    regexp: "^{{ item.private_ip }}\\s+{{ item.host_name }}$"
+    line: "{{ item.internal_address }} {{ item.host_name }}"
+    regexp: "^{{ item.internal_address }}\\s+{{ item.host_name }}$"
     state: present
     backup: true
   loop: "{{ setup_host_entries }}"
