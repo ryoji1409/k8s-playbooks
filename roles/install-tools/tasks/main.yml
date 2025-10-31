@@ -158,6 +158,6 @@
     rm cilium-linux-${CLI_ARCH}.tar.gz
     rm cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
   changed_when: false
-  when: "'kube_control_plane' in group_names and (cni_plugin) == 'cilium'" 
+  when: "'kube_control_plane' in group_names and (cni_plugin) == 'cilium'"
   vars:
     cni_plugin: "{{ cni | default('no') }}"

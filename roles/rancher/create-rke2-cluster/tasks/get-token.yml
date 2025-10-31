@@ -22,7 +22,7 @@
       Authorization: "{{ rancher_api_bearer }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
-    status_code: [201,409]
+    status_code: [201, 409]
     body_format: json
     body:
       type: clusterRegistrationToken

@@ -35,11 +35,20 @@
       ansible.builtin.debug:
         msg: "CP Join command: {{ join_cmd }}"
 
+    - name: Detect rancher-system-agent installed
+      become: true
+      ansible.builtin.stat:
+        path: /etc/systemd/system/rancher-system-agent.service
+      register: agent_svc
+
     - name: Run system-agent install on control-plane/etcd nodes
-      become: yes
+      become: true
       ansible.builtin.shell: "{{ join_cmd }}"
       args:
         executable: /bin/bash
+      when: not agent_svc.stat.exists
+      changed_when: not agent_svc.stat.exists
+
 
 - name: Register worker nodes
   hosts: kube_node
@@ -60,8 +69,16 @@
       ansible.builtin.debug:
         msg: "Worker Join command: {{ join_cmd }}"
 
+    - name: Detect rancher-system-agent installed
+      become: true
+      ansible.builtin.stat:
+        path: /etc/systemd/system/rancher-system-agent.service
+      register: agent_svc
+
     - name: Run system-agent install on worker nodes
-      become: yes
+      become: true
       ansible.builtin.shell: "{{ join_cmd }}"
       args:
         executable: /bin/bash
+      when: not agent_svc.stat.exists
+      changed_when: not agent_svc.stat.exists
