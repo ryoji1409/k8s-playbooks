@@ -8,8 +8,11 @@
     - role: docker/setup
     - role: rancher/run-rancher
   vars:
-    rancher_version: "v2.8.2"
+    # https://hub.docker.com/r/rancher/rancher/tags
+    rancher_version: "v2.11.3"
     rancher_docker_image: "rancher/rancher:{{ rancher_version }}"
     rancher_data_dir: "/opt/rancher"
+    rancher_compose_file: docker-compose.yml
+    rancher_container_name: rancher
     rancher_http_port: 80
     rancher_https_port: 443

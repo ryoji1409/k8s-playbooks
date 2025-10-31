@@ -15,7 +15,7 @@ rancher_url: "https://10.0.0.14"
 rancher_api_bearer: "bearer token-*****************"
 cluster_name: "sample-cluster"
 cluster_namespace: "fleet-default"  # ui “namespace: fleet-default”
-kubernetes_version: "v1.27.16+rke2r2"
+kubernetes_version: "v1.32.9+rke2r1"  # https://github.com/rancher/rke2/tags
 cni: "multus,canal"
 kubelet_args:
   - "max-pods=500"
