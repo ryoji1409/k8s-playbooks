@@ -1,0 +1,62 @@
+---
+- name: Validate required project fields
+  ansible.builtin.fail:
+    msg: "Project {{ project_item.name | default('unknown') }} missing required fields: name"
+  when:
+    - project_item.name is not defined or project_item.name | length == 0
+
+- name: Check if project already exists - {{ project_item.name }}
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/projects?clusterId={{ cluster_id }}&name={{ project_item.name }}"
+    method: GET
+    headers:
+      Authorization: "{{ rancher_api_bearer }}"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    body_format: json
+    status_code: [200]
+  register: project_check
+  changed_when: false
+
+- name: Create Rancher project - {{ project_item.name }}
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/projects"
+    method: POST
+    headers:
+      Authorization: "{{ rancher_api_bearer }}"
+      Content-Type: "application/json"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    body_format: json
+    status_code: [200, 201, 422]
+    body:
+      type: project
+      clusterId: "{{ cluster_id }}"
+      name: "{{ project_item.name }}"
+      displayName: "{{ project_item.display_name | default(project_item.name) }}"
+      description: "{{ project_item.description | default('') }}"
+      containerDefaultResourceLimit:
+        limitsCpu: "{{ project_item.limits_cpu | default('500m') }}"
+        limitsMemory: "{{ project_item.limits_memory | default('512Mi') }}"
+        requestsCpu: "{{ project_item.requests_cpu | default('250m') }}"
+        requestsMemory: "{{ project_item.requests_memory | default('256Mi') }}"
+  register: project_create
+  when: project_check.json.data | length == 0
+  changed_when: project_create.status in [200, 201]
+
+- name: Set project_id for new project - {{ project_item.name }}
+  ansible.builtin.set_fact:
+    project_id: "{{ project_create.json.id }}"
+  when: project_create is changed
+
+- name: Set project_id for existing project - {{ project_item.name }}
+  ansible.builtin.set_fact:
+    project_id: "{{ project_check.json.data[0].id }}"
+  when: project_check.json.data | length > 0
+
+- name: Display project details - {{ project_item.name }}
+  ansible.builtin.debug:
+    msg:
+      - "Project: {{ project_item.name }}"
+      - "Display Name: {{ project_item.display_name | default(project_item.name) }}"
+      - "Cluster ID: {{ cluster_id }}"
+      - "Project ID: {{ project_id }}"
+      - "Status: {{ 'Created' if project_create is changed else 'Already exists' }}"

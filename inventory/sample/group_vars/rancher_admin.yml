@@ -1,0 +1,81 @@
+---
+rancher_url: "https://10.0.0.14"
+rancher_api_bearer: "bearer token-*****************"
+cluster_name: "sample-cluster"
+cluster_id: "c-xxxxx"
+cluster_namespace: "fleet-default"  # ui “namespace: fleet-default”
+kubernetes_version: "v1.32.9+rke2r1"  # https://github.com/rancher/rke2/tags
+cni: "multus,canal"
+kubelet_args:
+  - "max-pods=500"
+kcm_args:
+  - "node-cidr-mask-size=22"
+rancher_insecure_ssl: true
+
+rancher_users:
+  - username: "john.doe"
+    password: "securepassword123!"
+    email: "john.doe@example.com"
+    display_name: "john doe"
+    description: "senior devops engineer"
+    enabled: true
+    is_admin: true
+    cluster_roles: []
+
+  - username: "jane.smith"
+    password: "anothersecurepass456!"
+    email: "jane.smith@example.com"
+    display_name: "jane smith"
+    description: "kubernetes administrator"
+    enabled: true
+    is_admin: false
+    cluster_roles:
+      - cluster_id: "c-xxxxx"
+        role: "cluster-member"
+      - cluster_id: "c-xxxxx"
+        role: "cluster-member"
+
+  - username: "bob.wilson"
+    password: "BobSecurePass789!"
+    email: "bob.wilson@example.com"
+    display_name: "Bob Wilson"
+    description: "Developer"
+    enabled: true
+    is_admin: false
+    cluster_roles:
+      - cluster_id: "c-xxxxx"
+        role: "cluster-owner"
+
+  - username: "alice.johnson"
+    password: "AlicePassword000!"
+    email: "alice.johnson@example.com"
+    display_name: "Alice Johnson"
+    description: "Operations Team Lead"
+    enabled: true
+    is_admin: false
+    cluster_roles: []
+
+rancher_projects:
+  - name: "production"
+    display_name: "Production Project"
+    description: "Production environment project"
+    limits_cpu: "2000m"
+    limits_memory: "2048Mi"
+    requests_cpu: "1000m"
+    requests_memory: "1024Mi"
+
+  - name: "staging"
+    display_name: "Staging Project"
+    description: "Staging environment for testing"
+    limits_cpu: "1000m"
+    limits_memory: "1024Mi"
+    requests_cpu: "500m"
+    requests_memory: "512Mi"
+
+  - name: "development"
+    display_name: "Development Project"
+    description: "Development environment"
+    limits_cpu: "500m"
+    limits_memory: "512Mi"
+    requests_cpu: "250m"
+    requests_memory: "256Mi"

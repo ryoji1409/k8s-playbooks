@@ -10,19 +10,6 @@ cilium_helm_repo: https://helm.cilium.io/
 cilium_helm_chart: cilium/cilium
 replacement_status: false  # true: without kube-proxy
 
-# For rke2
-rancher_url: "https://10.0.0.14"
-rancher_api_bearer: "bearer token-*****************"
-cluster_name: "sample-cluster"
-cluster_namespace: "fleet-default"  # ui “namespace: fleet-default”
-kubernetes_version: "v1.32.9+rke2r1"  # https://github.com/rancher/rke2/tags
-cni: "multus,canal"
-kubelet_args:
-  - "max-pods=500"
-kcm_args:
-  - "node-cidr-mask-size=22"
-rancher_insecure_ssl: true
-
 kube_control_plane:
   control_plane01:
     host_name: control_plane01

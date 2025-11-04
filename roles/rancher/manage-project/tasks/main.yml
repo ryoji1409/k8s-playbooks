@@ -1,0 +1,46 @@
+---
+- name: Validate required variables
+  ansible.builtin.fail:
+    msg: "Required variables missing: rancher_url, rancher_api_bearer, cluster_id, and rancher_projects"
+  when:
+    - rancher_url is not defined or rancher_url | length == 0
+    - rancher_api_bearer is not defined or rancher_api_bearer | length == 0
+    - cluster_id is not defined or cluster_id | length == 0
+    - rancher_projects is not defined
+  run_once: true
+
+- name: Validate projects list is provided
+  ansible.builtin.fail:
+    msg: "Required variable missing: rancher_projects (list of projects to create)"
+  when:
+    - rancher_projects is not defined
+    - projects_file is not defined
+  run_once: true
+
+- name: Load projects from file if specified
+  ansible.builtin.include_vars:
+    file: "{{ projects_file }}"
+    name: loaded_projects
+  when: projects_file is defined
+  run_once: true
+
+- name: Set projects list from file or variable
+  ansible.builtin.set_fact:
+    projects_to_manage: "{{ loaded_projects.rancher_projects | default(rancher_projects, true) }}"
+  run_once: true
+
+- name: Manage Rancher projects
+  ansible.builtin.include_tasks: manage-project-item.yml
+  loop: "{{ projects_to_manage }}"
+  loop_control:
+    loop_var: project_item
+  run_once: true
+
+- name: Display projects management summary
+  ansible.builtin.debug:
+    msg:
+      - "Rancher projects management completed!"
+      - "Total projects processed: {{ projects_to_manage | length }}"
+      - "Projects:"
+      - "{{ projects_to_manage | map(attribute='name') | list }}"
+  run_once: true

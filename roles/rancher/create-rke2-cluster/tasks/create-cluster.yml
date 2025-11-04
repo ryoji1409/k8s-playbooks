@@ -28,7 +28,6 @@
         namespace: "{{ cluster_namespace }}"
       spec:
         kubernetesVersion: "{{ kubernetes_version }}"
-        # RKE2 の設定。UI の “Edit as YAML” に近い形。
         rkeConfig:
           machineGlobalConfig:
             cni: "{{ cni }}"
