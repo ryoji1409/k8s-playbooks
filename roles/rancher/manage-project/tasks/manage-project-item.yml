@@ -10,7 +10,7 @@
     url: "{{ rancher_url }}/v3/projects?clusterId={{ cluster_id }}&name={{ project_item.name }}"
     method: GET
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
     status_code: [200]
@@ -22,7 +22,7 @@
     url: "{{ rancher_url }}/v3/projects"
     method: POST
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json

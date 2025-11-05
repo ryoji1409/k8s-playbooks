@@ -1,8 +1,7 @@
 ---
 rancher_url: "https://10.0.0.14"
-rancher_api_bearer: "bearer token-*****************"
 cluster_name: "sample-cluster"
-cluster_id: "c-xxxxx"
+# cluster_id: "c-xxxxx"  # Cluster Management -> YAML -> clusterName
 cluster_namespace: "fleet-default"  # ui “namespace: fleet-default”
 kubernetes_version: "v1.32.9+rke2r1"  # https://github.com/rancher/rke2/tags
 cni: "multus,canal"
@@ -14,45 +13,46 @@ rancher_insecure_ssl: true
 
 rancher_users:
   - username: "john.doe"
-    password: "securepassword123!"
-    email: "john.doe@example.com"
-    display_name: "john doe"
-    description: "senior devops engineer"
+    display_name: "John Doe"
+    description: "Senior DevOps Engineer"
     enabled: true
-    is_admin: true
+    global_role: "admin"                    # Global role: admin, user, user-base
     cluster_roles: []
 
   - username: "jane.smith"
-    password: "anothersecurepass456!"
-    email: "jane.smith@example.com"
-    display_name: "jane smith"
-    description: "kubernetes administrator"
+    display_name: "Jane Smith"
+    description: "Kubernetes Administrator"
     enabled: true
-    is_admin: false
+    must_change_password: true              # Force password change on first login
+    global_role: "user"                     # Standard user role
     cluster_roles:
-      - cluster_id: "c-xxxxx"
+      - cluster_id: "c-xxxxx"               # Get cluster ID from Rancher UI: Admin → Clusters
         role: "cluster-member"
-      - cluster_id: "c-xxxxx"
+      - cluster_id: "c-yyyyy"
         role: "cluster-member"
 
   - username: "bob.wilson"
-    password: "BobSecurePass789!"
-    email: "bob.wilson@example.com"
     display_name: "Bob Wilson"
     description: "Developer"
     enabled: true
-    is_admin: false
+    global_role: "user"                     # Standard user role
     cluster_roles:
-      - cluster_id: "c-xxxxx"
+      - cluster_id: "c-zzzzz"               # Get cluster ID from Rancher UI
         role: "cluster-owner"
 
+  - username: "user-admin"
+    display_name: "User Administrator"
+    description: "Standard user with cluster access"
+    enabled: true
+    must_change_password: true
+    global_role: "user"                     # Standard user role
+    cluster_roles: []
+
   - username: "alice.johnson"
-    password: "AlicePassword000!"
-    email: "alice.johnson@example.com"
     display_name: "Alice Johnson"
     description: "Operations Team Lead"
     enabled: true
-    is_admin: false
+    global_role: "user-base"                # Base user permissions
     cluster_roles: []
 
 rancher_projects:

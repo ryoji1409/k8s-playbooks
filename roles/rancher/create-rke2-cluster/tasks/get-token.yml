@@ -4,7 +4,7 @@
     url: "{{ rancher_url }}/v3/clusters?name={{ cluster_name }}"
     method: GET
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     status_code: [200]
   register: mgmt_clusters
@@ -19,7 +19,7 @@
     url: "{{ rancher_url }}/v3/clusterregistrationtokens"
     method: POST
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     status_code: [201, 409]
@@ -35,7 +35,7 @@
     url: "{{ rancher_url }}/v3/clusterregistrationtokens?clusterId={{ mgmt_cluster_id }}"
     method: GET
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     status_code: [200]
   register: tokens_list

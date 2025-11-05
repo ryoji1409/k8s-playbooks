@@ -3,5 +3,6 @@
   hosts: rancher_admin
   gather_facts: false
   roles:
+    - role: rancher/validate
     - role: rancher/manage-project
   vars:

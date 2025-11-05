@@ -1,10 +1,8 @@
 ---
 - name: Validate required variables
   ansible.builtin.fail:
-    msg: "Required variables missing: rancher_url, rancher_api_bearer, cluster_id, and rancher_projects"
+    msg: "Required variables missing: cluster_id, and rancher_projects"
   when:
-    - rancher_url is not defined or rancher_url | length == 0
-    - rancher_api_bearer is not defined or rancher_api_bearer | length == 0
     - cluster_id is not defined or cluster_id | length == 0
     - rancher_projects is not defined
   run_once: true

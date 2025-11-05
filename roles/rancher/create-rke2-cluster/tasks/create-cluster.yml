@@ -4,7 +4,7 @@
     url: "{{ rancher_url }}/v1/provisioning.cattle.io.clusters/{{ cluster_namespace }}/{{ cluster_name }}"
     method: GET
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     status_code: [200, 404]
   register: cluster_get
@@ -15,7 +15,7 @@
     url: "{{ rancher_url }}/v1/provisioning.cattle.io.clusters"
     method: POST
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
@@ -44,7 +44,7 @@
     url: "{{ rancher_url }}/v1/provisioning.cattle.io.clusters/{{ cluster_namespace }}/{{ cluster_name }}"
     method: GET
     headers:
-      Authorization: "{{ rancher_api_bearer }}"
+      Authorization: "bearer {{ rancher_api_token}}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
   register: cluster_poll
   until: cluster_poll.json.status is defined

@@ -3,6 +3,7 @@
   hosts: rancher_admin
   gather_facts: false
   roles:
+    - role: rancher/validate
     - role: rancher/create-rke2-cluster
 
 - name: Register control-plane/etcd nodes
