@@ -94,8 +94,11 @@
     status_code: [200, 201, 422]
     body:
       type: globalRoleBinding
-      globalRoleId: "{{ user_item.global_role | default('user') }}"
+      globalRoleId: "{{ item }}"
       userId: "{{ user_create.json.id }}"
+  loop: "{{ user_item.global_role }}"
+  loop_control:
+    label: "{{ item }}"
   register: global_role
   when:
     - user_item.global_role is defined

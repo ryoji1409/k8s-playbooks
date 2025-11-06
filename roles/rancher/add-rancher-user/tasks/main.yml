@@ -1,14 +1,7 @@
 ---
-- name: Load users from file if specified
-  ansible.builtin.include_vars:
-    file: "{{ users_file }}"
-    name: loaded_users
-  when: users_file is defined
-  run_once: true
-
 - name: Set users list from file or variable
   ansible.builtin.set_fact:
-    users_to_manage: "{{ loaded_users.rancher_users | default(rancher_users, true) }}"
+    users_to_manage: "{{ rancher_users }}"
   run_once: true
 
 - name: Manage Rancher users

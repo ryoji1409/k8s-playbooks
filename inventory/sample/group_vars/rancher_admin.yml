@@ -16,7 +16,7 @@ rancher_users:
     display_name: "John Doe"
     description: "Senior DevOps Engineer"
     enabled: true
-    global_role: "admin"                    # Global role: admin, user, user-base
+    global_role: ["admin"]                    # Global role: admin, user, user-base
     cluster_roles: []
 
   - username: "jane.smith"
@@ -24,7 +24,7 @@ rancher_users:
     description: "Kubernetes Administrator"
     enabled: true
     must_change_password: true              # Force password change on first login
-    global_role: "user"                     # Standard user role
+    global_role: ["user"]                     # Standard user role
     cluster_roles:
       - cluster_id: "c-xxxxx"               # Get cluster ID from Rancher UI: Admin → Clusters
         role: "cluster-member"
@@ -35,7 +35,7 @@ rancher_users:
     display_name: "Bob Wilson"
     description: "Developer"
     enabled: true
-    global_role: "user"                     # Standard user role
+    global_role: ["user"]                     # Standard user role
     cluster_roles:
       - cluster_id: "c-zzzzz"               # Get cluster ID from Rancher UI
         role: "cluster-owner"
@@ -45,15 +45,31 @@ rancher_users:
     description: "Standard user with cluster access"
     enabled: true
     must_change_password: true
-    global_role: "user"                     # Standard user role
+    global_role: ["user"]                     # Standard user role
     cluster_roles: []
 
   - username: "alice.johnson"
     display_name: "Alice Johnson"
     description: "Operations Team Lead"
     enabled: true
-    global_role: "user-base"                # Base user permissions
+    global_role: ["user-base", "users-manage"]            # Base user permissions & Manage Users permissions
     cluster_roles: []
+
+    # Select a global_role from the following globalRoleIds
+    # - admin
+    # - user: Standard user role
+    # - user-base: Base user permissions
+    # - clustertemplaterevisions-create: Create RKE TEmplate Revisions
+    # - authn-manage: Configure Authentication
+    # - roles-manage: Manage Roles
+    # - users-manage: Manage Users
+    # - clustertemplates-create: Create new RKE Cluster Templates
+    # - kontainerdrivers-manage: Create new Cluster Drivers
+    # - clusters-create: Create new Clusters
+    # - nodedrivers-manage: Configure Node Drivers
+    # - settings-manage: Manage Settings
+    # - view-rancher-metrics: View Rancher Metrics
+    # - features-manage: Configure Feature Flags
 
 rancher_projects:
   - name: "production"
@@ -79,3 +95,42 @@ rancher_projects:
     limits_memory: "512Mi"
     requests_cpu: "250m"
     requests_memory: "256Mi"
+
+rancher_project_members_config:
+  # production project
+  "production":
+    rancher_project_members:
+      - username: "john.doe"
+        role: "project-owner"
+      - username: "jane.smith"
+        role: "project-member"
+  # development project
+  "development":
+    rancher_project_members:
+      - username: "john.doe"
+        role: "project-owner"
+      - username: "jane.smith"
+        role: "read-only"
+
+        # Select a role from the following roleTemplateId
+        # - project-owner
+        # - project-member
+        # - read-only
+        # - serviceaccounts-view
+        # - configmaps-view
+        # - ingress-manage
+        # - projectroletemplatebindings-view
+        # - workloads-manage
+        # - services-view
+        # - monitoring-ui-view
+        # - serviceaccounts-manage
+        # - ingress-view
+        # - workloads-view
+        # - projectroletemplatebindings-manage
+        # - secrets-manage
+        # - secrets-view
+        # - services-manage
+        # - persistentvolumeclaims-manage
+        # - create-ns
+        # - configmaps-manage
+        # - persistentvolumeclaims-view

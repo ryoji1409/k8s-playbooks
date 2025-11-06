@@ -1,0 +1,28 @@
+---
+- name: Display summary
+  ansible.builtin.debug:
+    msg:
+      - "rancher_project_members"
+      - "{{ rancher_project_members }}"
+  run_once: true
+
+- name: Set members list from file or variable
+  ansible.builtin.set_fact:
+    members_to_manage: "{{ rancher_project_members }}"
+  run_once: true
+
+- name: Manage project members
+  ansible.builtin.include_tasks: manage-member.yml
+  loop: "{{ members_to_manage }}"
+  loop_control:
+    loop_var: member_item
+  run_once: true
+
+- name: Display project members management summary
+  ansible.builtin.debug:
+    msg:
+      - "Rancher project members management completed!"
+      - "Total members processed: {{ members_to_manage | length }}"
+      - "Members:"
+      - "{{ members_to_manage | map(attribute='username') | list }}"
+  run_once: true
