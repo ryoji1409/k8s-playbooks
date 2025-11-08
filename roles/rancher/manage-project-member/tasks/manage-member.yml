@@ -85,23 +85,36 @@
   changed_when: member_add.status in [200, 201]
 
 - name: Update member role if already exists - {{ member_item.username }}
-  ansible.builtin.uri:
-    url: "{{ rancher_url }}/v3/projectroletemplatebindings/{{ role_check.json.data[0].id }}"
-    method: PUT
-    headers:
-      Authorization: "bearer {{ rancher_api_token }}"
-      Content-Type: "application/json"
-    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
-    body_format: json
-    status_code: [200, 201]
-    body:
-      type: projectRoleBinding
-      projectId: "{{ project_id }}"
-      roleTemplateId: "{{ member_item.role }}"
-      userId: "{{ member_user_id }}"
-  register: member_update
   when: role_check.json.data | length > 0 and member_item.role != role_check.json.data[0].roleTemplateId
-  changed_when: member_update.status in [200, 201]
+  block:
+    - name: Delete existing member role
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/projectRoleTemplateBindings/{{ role_check.json.data[0].id }}"
+        method: DELETE
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        status_code: [200, 204]
+      register: member_delete
+      changed_when: member_delete.status in [200, 204]
+
+    - name: Add new member role
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/projectroletemplatebindings"
+        method: POST
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+          Content-Type: "application/json"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        body_format: json
+        status_code: [200, 201, 422]
+        body:
+          type: projectRoleBinding
+          projectId: "{{ project_id }}"
+          roleTemplateId: "{{ member_item.role }}"
+          userId: "{{ member_user_id }}"
+      register: member_update
+      changed_when: member_update.status in [200, 201]
 
 - name: Display member details - {{ member_item.username }}
   ansible.builtin.debug:
