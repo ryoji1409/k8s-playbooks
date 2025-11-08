@@ -10,7 +10,7 @@
     url: "{{ rancher_url }}/v3/projects?clusterId={{ cluster_id }}&name={{ project_item.name }}"
     method: GET
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
     status_code: [200]
@@ -22,7 +22,7 @@
     url: "{{ rancher_url }}/v3/projects"
     method: POST
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
@@ -45,7 +45,7 @@
 - name: Set project_id for new project - {{ project_item.name }}
   ansible.builtin.set_fact:
     project_id: "{{ project_create.json.id }}"
-  when: project_create is changed
+  when: project_check.json.data | length == 0
 
 - name: Set project_id for existing project - {{ project_item.name }}
   ansible.builtin.set_fact:

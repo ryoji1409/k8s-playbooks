@@ -1,10 +1,10 @@
 ---
 - name: Get projects from rancher
-  uri:
+  ansible.builtin.uri:
     url: "{{ rancher_url }}/v3/projects"
     method: get
     headers:
-      authorization: "bearer {{ rancher_api_token}}"
+      authorization: "bearer {{ rancher_api_token }}"
       content-type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     return_content: true
@@ -12,7 +12,7 @@
   register: rancher_projects
 
 - name: Convert project name → project id
-  set_fact:
+  ansible.builtin.set_fact:
     project_id: >-
       {{
         (rancher_projects.json.data
@@ -28,7 +28,7 @@
       }}
 
 - name: Fail if project not found
-  fail:
+  ansible.builtin.fail:
     msg: "project '{{ project_name }}' not found in rancher"
   when: project_id is not defined or project_id == ""
 
@@ -37,7 +37,7 @@
     url: "{{ rancher_url }}/v3/users?username={{ member_item.username }}"
     method: GET
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
     status_code: [200]
@@ -58,7 +58,7 @@
     url: "{{ rancher_url }}/v3/projectroletemplatebindings?userId={{ member_user_id }}&projectId={{ project_id }}"
     method: GET
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
     status_code: [200]
@@ -70,7 +70,7 @@
     url: "{{ rancher_url }}/v3/projectroletemplatebindings"
     method: POST
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
@@ -89,7 +89,7 @@
     url: "{{ rancher_url }}/v3/projectroletemplatebindings/{{ role_check.json.data[0].id }}"
     method: PUT
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json

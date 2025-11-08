@@ -10,7 +10,7 @@
     url: "{{ rancher_url }}/v3/users?username={{ user_item.username }}"
     method: GET
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
     status_code: [200]
@@ -39,7 +39,7 @@
     url: "{{ rancher_url }}/v3/users"
     method: POST
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
@@ -67,7 +67,7 @@
     url: "{{ rancher_url }}/v3/users/{{ user_create.json.id }}"
     method: PUT
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
@@ -87,7 +87,7 @@
     url: "{{ rancher_url }}/v3/globalrolebindings"
     method: POST
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json
@@ -110,7 +110,7 @@
     url: "{{ rancher_url }}/v3/clusterroletemplatebindings"
     method: POST
     headers:
-      Authorization: "bearer {{ rancher_api_token}}"
+      Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
     validate_certs: "{{ not rancher_insecure_ssl | bool }}"
     body_format: json

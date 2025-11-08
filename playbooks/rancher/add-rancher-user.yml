@@ -5,4 +5,3 @@
   roles:
     - role: rancher/validate
     - role: rancher/add-rancher-user
-  vars:
