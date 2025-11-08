@@ -78,27 +78,33 @@
     body:
       type: projectRoleBinding
       projectId: "{{ project_id }}"
-      roleTemplateId: "{{ member_item.role }}"
+      roleTemplateId: "{{ role_item }}"
       userId: "{{ member_user_id }}"
+  loop: "{{ member_item.role }}"
+  loop_control:
+    loop_var: role_item
   register: member_add
   when: role_check.json.data | length == 0
   changed_when: member_add.status in [200, 201]
 
 - name: Update member role if already exists - {{ member_item.username }}
-  when: role_check.json.data | length > 0 and member_item.role != role_check.json.data[0].roleTemplateId
+  when: role_check.json.data | length > 0
   block:
-    - name: Delete existing member role
+    - name: Delete all existing member roles
       ansible.builtin.uri:
-        url: "{{ rancher_url }}/v3/projectRoleTemplateBindings/{{ role_check.json.data[0].id }}"
+        url: "{{ rancher_url }}/v3/projectRoleTemplateBindings/{{ role_item.id }}"
         method: DELETE
         headers:
           Authorization: "bearer {{ rancher_api_token }}"
         validate_certs: "{{ not rancher_insecure_ssl | bool }}"
         status_code: [200, 204]
+      loop: "{{ role_check.json.data }}"
+      loop_control:
+        loop_var: role_item
       register: member_delete
       changed_when: member_delete.status in [200, 204]
 
-    - name: Add new member role
+    - name: Add new member roles
       ansible.builtin.uri:
         url: "{{ rancher_url }}/v3/projectroletemplatebindings"
         method: POST
@@ -111,8 +117,11 @@
         body:
           type: projectRoleBinding
           projectId: "{{ project_id }}"
-          roleTemplateId: "{{ member_item.role }}"
+          roleTemplateId: "{{ role_item }}"
           userId: "{{ member_user_id }}"
+      loop: "{{ member_item.role }}"
+      loop_control:
+        loop_var: role_item
       register: member_update
       changed_when: member_update.status in [200, 201]
 
@@ -122,5 +131,6 @@
       - "Member: {{ member_item.username }}"
       - "User ID: {{ member_user_id }}"
       - "Project ID: {{ project_id }}"
+      - "Project Name: {{ project_name }}"
       - "Role: {{ member_item.role }}"
       - "Status: {{ 'Added' if member_add is changed else 'Updated' if member_update is changed else 'Already exists' }}"

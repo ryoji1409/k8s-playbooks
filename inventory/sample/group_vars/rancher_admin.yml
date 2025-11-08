@@ -101,16 +101,16 @@ rancher_project_members_config:
   "production":
     rancher_project_members:
       - username: "john.doe"
-        role: "project-owner"
+        role: ["project-owner"]
       - username: "jane.smith"
-        role: "project-member"
+        role: ["project-member"]
   # development project
   "development":
     rancher_project_members:
       - username: "john.doe"
-        role: "project-owner"
+        role: ["project-owner"]
       - username: "jane.smith"
-        role: "read-only"
+        role: ["monitoring-ui-view", "read-only"]
 
         # Select a role from the following roleTemplateId
         # - project-owner
