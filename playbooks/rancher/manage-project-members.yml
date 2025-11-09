@@ -2,17 +2,9 @@
 - name: Manage Rancher project members for multiple projects
   hosts: rancher_admin
   gather_facts: false
+  roles:
+    - role: rancher/validate
   tasks:
-    - name: Validate required variables
-      ansible.builtin.fail:
-        msg: "Required variables missing: rancher_url, rancher_api_bearer, rancher_project_members_config"
-      changed_when: false
-      when:
-        - rancher_url is not defined or rancher_url | length == 0
-        - rancher_api_bearer is not defined or rancher_api_bearer | length == 0
-        - rancher_project_members_config is not defined
-        - inventory_hostname == ansible_play_hosts_all[0]
-
     - name: Manage members for each project
       ansible.builtin.include_role:
         name: rancher/manage-project-member
