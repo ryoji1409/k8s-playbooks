@@ -1,0 +1,21 @@
+---
+- name: Set users list from variable
+  ansible.builtin.set_fact:
+    users_to_manage: "{{ rancher_users }}"
+  run_once: true
+
+- name: Manage Rancher users
+  ansible.builtin.include_tasks: manage-user.yml
+  loop: "{{ users_to_manage }}"
+  loop_control:
+    loop_var: user_item
+  run_once: true
+
+- name: Display users management summary
+  ansible.builtin.debug:
+    msg:
+      - "Rancher users management completed!"
+      - "Total users processed: {{ users_to_manage | length }}"
+      - "Users:"
+      - "{{ users_to_manage | map(attribute='username') | list }}"
+  run_once: true

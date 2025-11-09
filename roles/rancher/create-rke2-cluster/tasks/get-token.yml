@@ -1,0 +1,58 @@
+---
+- name: Lookup management cluster id (c-xxxxx) by name
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/clusters?name={{ cluster_name }}"
+    method: GET
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    status_code: [200]
+  register: mgmt_clusters
+
+- name: Set management cluster id
+  ansible.builtin.set_fact:
+    mgmt_cluster_id: "{{ mgmt_clusters.json.data[0].id | default(omit) }}"
+  failed_when: mgmt_cluster_id is not defined
+
+- name: Ensure cluster registration token exists (v3)
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/clusterregistrationtokens"
+    method: POST
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+      Content-Type: "application/json"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    status_code: [201, 409]
+    body_format: json
+    body:
+      type: clusterRegistrationToken
+      clusterId: "{{ mgmt_cluster_id }}"
+  register: token_created
+  failed_when: false
+
+- name: Get registration tokens for this cluster (v3)
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/clusterregistrationtokens?clusterId={{ mgmt_cluster_id }}"
+    method: GET
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    status_code: [200]
+  register: tokens_list
+
+- name: Pick latest token
+  ansible.builtin.set_fact:
+    reg_token: "{{ (tokens_list.json.data | sort(attribute='created')) | last }}"
+  failed_when: reg_token is not defined
+
+- name: Set base join command
+  ansible.builtin.set_fact:
+    base_join_cmd: >-
+      {{ (rancher_insecure_ssl | bool)
+           | ternary(reg_token.insecureNodeCommand, reg_token.nodeCommand) }}
+  run_once: true
+
+- name: Debug base join command
+  ansible.builtin.debug:
+    msg: "Base join command: {{ base_join_cmd }}"
+  run_once: true

@@ -1,0 +1,16 @@
+---
+- name: Validate required variables (url)
+  ansible.builtin.fail:
+    msg: "Required variables missing: rancher_url"
+  when:
+    - rancher_url is not defined or rancher_url | length == 0
+  run_once: true
+
+- name: Validate required variables (token)
+  ansible.builtin.fail:
+    msg:
+      - Required variables missing: rancher_api_token (e.g. "-e rancher_api_token=token-xxxxx:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+      - ref: https://ranchermanager.docs.rancher.com/reference-guides/user-settings/api-keys#creating-an-api-key
+  when:
+    - rancher_api_token is not defined or rancher_api_token | length == 0
+  run_once: true

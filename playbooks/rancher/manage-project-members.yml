@@ -1,0 +1,26 @@
+---
+- name: Manage Rancher project members for multiple projects
+  hosts: rancher_admin
+  gather_facts: false
+  roles:
+    - role: rancher/validate
+  tasks:
+    - name: Manage members for each project
+      ansible.builtin.include_role:
+        name: rancher/manage-project-member
+      vars:
+        project_name: "{{ project_item.key }}"
+        rancher_project_members: "{{ project_item.value.rancher_project_members | default(omit) }}"
+      loop: "{{ rancher_project_members_config | dict2items }}"
+      loop_control:
+        loop_var: project_item
+      when: inventory_hostname == ansible_play_hosts_all[0]
+
+    - name: Display summary
+      ansible.builtin.debug:
+        msg:
+          - "Project member management completed for all projects!"
+          - "Total projects: {{ rancher_project_members_config | length }}"
+          - "Projects:"
+          - "{{ rancher_project_members_config.keys() | list }}"
+      when: inventory_hostname == ansible_play_hosts_all[0]

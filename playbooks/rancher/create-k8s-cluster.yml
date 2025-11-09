@@ -1,0 +1,85 @@
+---
+- name: Provision RKE2 cluster via Rancher and register nodes
+  hosts: rancher_admin
+  gather_facts: false
+  roles:
+    - role: rancher/validate
+    - role: rancher/create-rke2-cluster
+
+- name: Register control-plane/etcd nodes
+  hosts: kube_control_plane
+  gather_facts: false
+  vars:
+    rancher_host: "{{ groups['rancher_admin'][0] }}"
+    base_join_cmd: "{{ hostvars[rancher_host].base_join_cmd }}"
+
+    node_address: "{{ kube_control_plane[inventory_hostname].address | default(ansible_host) }}"
+    node_internal_address: "{{ kube_control_plane[inventory_hostname].internal_address | default(ansible_host) }}"
+
+    join_cmd: >-
+      {{ base_join_cmd }}
+      --address {{ node_address }}
+      --internal-address {{ node_internal_address }}
+      --etcd --controlplane
+
+  tasks:
+    - name: Debug node variable resolution
+      ansible.builtin.debug:
+        msg:
+          inventory_hostname: "{{ inventory_hostname }}"
+          node_address: "{{ node_address }}"
+          node_internal_address: "{{ node_internal_address }}"
+          rancher_host: "{{ rancher_host }}"
+          base_join_cmd_start: "{{ base_join_cmd.split()[:5] | join(' ') }} ..."
+
+    - name: Debug join command for control-plane/etcd
+      ansible.builtin.debug:
+        msg: "CP Join command: {{ join_cmd }}"
+
+    - name: Detect rancher-system-agent installed
+      become: true
+      ansible.builtin.stat:
+        path: /etc/systemd/system/rancher-system-agent.service
+      register: agent_svc
+
+    - name: Run system-agent install on control-plane/etcd nodes
+      become: true
+      ansible.builtin.shell: "{{ join_cmd }}"
+      args:
+        executable: /bin/bash
+      when: not agent_svc.stat.exists
+      changed_when: not agent_svc.stat.exists
+
+
+- name: Register worker nodes
+  hosts: kube_node
+  gather_facts: false
+  vars:
+    rancher_host: "{{ groups['rancher_admin'][0] }}"
+    base_join_cmd: "{{ hostvars[rancher_host].base_join_cmd }}"
+    node_address: "{{ kube_node[inventory_hostname].address | default(ansible_host) }}"
+    node_internal_address: "{{ kube_node[inventory_hostname].internal_address | default(ansible_host) }}"
+    join_cmd: >-
+      {{ base_join_cmd }}
+      --address {{ node_address }}
+      --internal-address {{ node_internal_address }}
+      --worker
+
+  tasks:
+    - name: Debug join command for worker
+      ansible.builtin.debug:
+        msg: "Worker Join command: {{ join_cmd }}"
+
+    - name: Detect rancher-system-agent installed
+      become: true
+      ansible.builtin.stat:
+        path: /etc/systemd/system/rancher-system-agent.service
+      register: agent_svc
+
+    - name: Run system-agent install on worker nodes
+      become: true
+      ansible.builtin.shell: "{{ join_cmd }}"
+      args:
+        executable: /bin/bash
+      when: not agent_svc.stat.exists
+      changed_when: not agent_svc.stat.exists

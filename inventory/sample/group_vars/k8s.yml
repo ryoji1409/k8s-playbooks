@@ -13,42 +13,42 @@ replacement_status: false  # true: without kube-proxy
 kube_control_plane:
   control_plane01:
     host_name: control_plane01
-    public_ip:
-    private_ip: 10.0.0.5
+    address: 192.168.10.1
+    internal_address: 10.0.0.5
   control_plane02:
     host_name: control_plane02
-    public_ip:
-    private_ip: 10.0.0.6
+    address: 192.168.10.2
+    internal_address: 10.0.0.6
 kube_node:
   node01:
     host_name: node01
-    public_ip:
-    private_ip: 10.0.0.8
+    address: 192.168.10.3
+    internal_address: 10.0.0.8
   node02:
     host_name: node02
-    public_ip:
-    private_ip: 10.0.0.9
+    address: 192.168.10.4
+    internal_address: 10.0.0.9
   node03:
     host_name: node03
-    public_ip:
-    private_ip: 10.0.0.10
+    address: 192.168.10.5
+    internal_address: 10.0.0.10
   node04:
     host_name: node04
-    public_ip:
-    private_ip: 10.0.0.11
+    address: 192.168.10.6
+    internal_address: 10.0.0.11
 haproxy:
   proxy01:
     host_name: proxy01
-    public_ip:
-    private_ip: 10.0.0.12
+    address: 192.168.10.7
+    internal_address: 10.0.0.12
     keepalived_role: master
   proxy02:
     host_name: proxy02
-    public_ip:
-    private_ip: 10.0.0.13
+    address: 192.168.10.8
+    internal_address: 10.0.0.13
     keepalived_role: backup
 rancher_admin:
   rancher_admin01:
     host_name: rancher_admin01
-    public_ip:
-    private_ip: 10.0.0.14
+    address: 192.168.10.9
+    internal_address: 10.0.0.14

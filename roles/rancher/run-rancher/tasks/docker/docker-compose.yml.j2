@@ -1,0 +1,11 @@
+services:
+  {{ rancher_container_name }}:
+    image: "{{ rancher_docker_image }}"
+    container_name: "{{ rancher_container_name }}"
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "{{ rancher_http_port }}:80"
+      - "{{ rancher_https_port }}:443"
+    volumes:
+      - "{{ rancher_data_dir }}:/var/lib/rancher"

@@ -1,0 +1,50 @@
+---
+- name: Check cluster exists
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v1/provisioning.cattle.io.clusters/{{ cluster_namespace }}/{{ cluster_name }}"
+    method: GET
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    status_code: [200, 404]
+  register: cluster_get
+
+- name: Create cluster if not exists
+  when: cluster_get.status == 404
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v1/provisioning.cattle.io.clusters"
+    method: POST
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+      Content-Type: "application/json"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    body_format: json
+    status_code: [200, 201]
+    body:
+      apiVersion: provisioning.cattle.io/v1
+      kind: Cluster
+      metadata:
+        name: "{{ cluster_name }}"
+        namespace: "{{ cluster_namespace }}"
+      spec:
+        kubernetesVersion: "{{ kubernetes_version }}"
+        rkeConfig:
+          machineGlobalConfig:
+            cni: "{{ cni }}"
+            "kubelet-arg": "{{ kubelet_args }}"
+            "kube-controller-manager-arg": "{{ kcm_args }}"
+          registries: {}
+  register: cluster_create
+  changed_when: cluster_create.status in [200,201]
+
+- name: Wait until cluster is ready to register
+  retries: 30
+  delay: 6
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v1/provisioning.cattle.io.clusters/{{ cluster_namespace }}/{{ cluster_name }}"
+    method: GET
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+  register: cluster_poll
+  until: cluster_poll.json.status is defined

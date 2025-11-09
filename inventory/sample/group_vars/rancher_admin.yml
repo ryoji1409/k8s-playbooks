@@ -1,0 +1,156 @@
+---
+rancher_url: "https://10.0.0.14"
+cluster_name: "sample-cluster"
+# cluster_id: "c-xxxxx"  # Cluster Management -> YAML -> clusterName
+cluster_namespace: "fleet-default"  # ui “namespace: fleet-default”
+kubernetes_version: "v1.32.9+rke2r1"  # https://github.com/rancher/rke2/tags
+cni: "multus,canal"
+kubelet_args:
+  - "max-pods=500"
+kcm_args:
+  - "node-cidr-mask-size=22"
+rancher_insecure_ssl: true
+
+rancher_users:
+  - username: "john.doe"
+    display_name: "John Doe"
+    description: "Senior DevOps Engineer"
+    enabled: true
+    global_role: ["admin"]                    # Global role: admin, user, user-base
+    cluster_roles: []
+
+  - username: "jane.smith"
+    display_name: "Jane Smith"
+    description: "Kubernetes Administrator"
+    enabled: true
+    must_change_password: true              # Force password change on first login
+    global_role: ["user"]                     # Standard user role
+    cluster_roles:
+      - cluster_id: "c-xxxxx"               # Get cluster ID from Rancher UI: Admin → Clusters
+        roles:
+          - "cluster-member"
+      - cluster_id: "c-yyyyy"
+        roles:
+          - "projects-view"
+          - "clustercatalogs-view"
+          - "nodes-view"
+
+  - username: "bob.wilson"
+    display_name: "Bob Wilson"
+    description: "Developer"
+    enabled: true
+    global_role: ["user"]                     # Standard user role
+    cluster_roles:
+      - cluster_id: "c-zzzzz"               # Get cluster ID from Rancher UI
+        roles:
+          - "cluster-owner"
+
+  - username: "user-admin"
+    display_name: "User Administrator"
+    description: "Standard user with cluster access"
+    enabled: true
+    must_change_password: true
+    global_role: ["user"]                     # Standard user role
+    cluster_roles: []
+
+  - username: "alice.johnson"
+    display_name: "Alice Johnson"
+    description: "Operations Team Lead"
+    enabled: true
+    global_role: ["user-base", "users-manage"]            # Base user permissions & Manage Users permissions
+    cluster_roles: []
+
+    # Select a global_role from the following globalRoleIds
+    # - admin
+    # - user: Standard user role
+    # - user-base: Base user permissions
+    # - clustertemplaterevisions-create: Create RKE TEmplate Revisions
+    # - authn-manage: Configure Authentication
+    # - roles-manage: Manage Roles
+    # - users-manage: Manage Users
+    # - clustertemplates-create: Create new RKE Cluster Templates
+    # - kontainerdrivers-manage: Create new Cluster Drivers
+    # - clusters-create: Create new Clusters
+    # - nodedrivers-manage: Configure Node Drivers
+    # - settings-manage: Manage Settings
+    # - view-rancher-metrics: View Rancher Metrics
+    # - features-manage: Configure Feature Flags
+
+    # Select a cluster_roles from the following roleTemplateId
+    # - cluster-owner: Cluster Owner
+    # - cluster-member: Cluster Member
+    # - clustercatalogs-view : View Cluster Catalogs
+    # - backups-manage: Manage Cluster Backups
+    # - projects-view: View All Projects
+    # - projects-create: Create Projects
+    # - navlinks-manage: Manage Navlinks
+    # - clusterroletemplatebindings-view: View Cluster Members
+    # - clustercatalogs-manage: Manage Cluster Catalogs
+    # - nodes-view: View Nodes
+    # - clusterroletemplatebindings-manage: Manage Cluster Members
+    # - storage-manage: Manage Storage
+    # - nodes-manage: Manage Nodes
+
+rancher_projects:
+  - name: "production"
+    display_name: "Production Project"
+    description: "Production environment project"
+    limits_cpu: "2000m"
+    limits_memory: "2048Mi"
+    requests_cpu: "1000m"
+    requests_memory: "1024Mi"
+
+  - name: "staging"
+    display_name: "Staging Project"
+    description: "Staging environment for testing"
+    limits_cpu: "1000m"
+    limits_memory: "1024Mi"
+    requests_cpu: "500m"
+    requests_memory: "512Mi"
+
+  - name: "development"
+    display_name: "Development Project"
+    description: "Development environment"
+    limits_cpu: "500m"
+    limits_memory: "512Mi"
+    requests_cpu: "250m"
+    requests_memory: "256Mi"
+
+rancher_project_members_config:
+  # production project
+  "production":
+    rancher_project_members:
+      - username: "john.doe"
+        role: ["project-owner"]
+      - username: "jane.smith"
+        role: ["project-member"]
+  # development project
+  "development":
+    rancher_project_members:
+      - username: "john.doe"
+        role: ["project-owner"]
+      - username: "jane.smith"
+        role: ["monitoring-ui-view", "read-only"]
+
+        # Select a role from the following roleTemplateId
+        # - project-owner
+        # - project-member
+        # - read-only
+        # - serviceaccounts-view
+        # - configmaps-view
+        # - ingress-manage
+        # - projectroletemplatebindings-view
+        # - workloads-manage
+        # - services-view
+        # - monitoring-ui-view
+        # - serviceaccounts-manage
+        # - ingress-view
+        # - workloads-view
+        # - projectroletemplatebindings-manage
+        # - secrets-manage
+        # - secrets-view
+        # - services-manage
+        # - persistentvolumeclaims-manage
+        # - create-ns
+        # - configmaps-manage
+        # - persistentvolumeclaims-view

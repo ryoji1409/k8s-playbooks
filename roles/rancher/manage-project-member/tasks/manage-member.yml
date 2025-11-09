@@ -1,0 +1,136 @@
+---
+- name: Get projects from rancher
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/projects"
+    method: get
+    headers:
+      authorization: "bearer {{ rancher_api_token }}"
+      content-type: "application/json"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    return_content: true
+    status_code: 200
+  register: rancher_projects
+
+- name: Convert project name → project id
+  ansible.builtin.set_fact:
+    project_id: >-
+      {{
+        (rancher_projects.json.data
+          | selectattr('name', 'equalto', project_name)
+          | list
+        )
+        | first
+        | default({})
+        | dict2items
+        | selectattr('key', 'equalto', 'id')
+        | map(attribute='value')
+        | first
+      }}
+
+- name: Fail if project not found
+  ansible.builtin.fail:
+    msg: "project '{{ project_name }}' not found in rancher"
+  when: project_id is not defined or project_id == ""
+
+- name: Get user ID - {{ member_item.username }}
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/users?username={{ member_item.username }}"
+    method: GET
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    body_format: json
+    status_code: [200]
+  register: user_lookup
+  changed_when: false
+
+- name: Fail if user not found - {{ member_item.username }}
+  ansible.builtin.fail:
+    msg: "User {{ member_item.username }} not found in Rancher"
+  when: user_lookup.json.data | length == 0
+
+- name: Set user_id fact - {{ member_item.username }}
+  ansible.builtin.set_fact:
+    member_user_id: "{{ user_lookup.json.data[0].id }}"
+
+- name: Check if member already has project role - {{ member_item.username }}
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/projectroletemplatebindings?userId={{ member_user_id }}&projectId={{ project_id }}"
+    method: GET
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    body_format: json
+    status_code: [200]
+  register: role_check
+  changed_when: false
+
+- name: Add member to project - {{ member_item.username }}
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/projectroletemplatebindings"
+    method: POST
+    headers:
+      Authorization: "bearer {{ rancher_api_token }}"
+      Content-Type: "application/json"
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    body_format: json
+    status_code: [200, 201, 422]
+    body:
+      type: projectRoleBinding
+      projectId: "{{ project_id }}"
+      roleTemplateId: "{{ role_item }}"
+      userId: "{{ member_user_id }}"
+  loop: "{{ member_item.role }}"
+  loop_control:
+    loop_var: role_item
+  register: member_add
+  when: role_check.json.data | length == 0
+  changed_when: member_add.status in [200, 201]
+
+- name: Update member role if already exists - {{ member_item.username }}
+  when: role_check.json.data | length > 0
+  block:
+    - name: Delete all existing member roles
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/projectRoleTemplateBindings/{{ role_item.id }}"
+        method: DELETE
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        status_code: [200, 204]
+      loop: "{{ role_check.json.data }}"
+      loop_control:
+        loop_var: role_item
+      register: member_delete
+      changed_when: member_delete.status in [200, 204]
+
+    - name: Add new member roles
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/projectroletemplatebindings"
+        method: POST
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+          Content-Type: "application/json"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        body_format: json
+        status_code: [200, 201, 422]
+        body:
+          type: projectRoleBinding
+          projectId: "{{ project_id }}"
+          roleTemplateId: "{{ role_item }}"
+          userId: "{{ member_user_id }}"
+      loop: "{{ member_item.role }}"
+      loop_control:
+        loop_var: role_item
+      register: member_update
+      changed_when: member_update.status in [200, 201]
+
+- name: Display member details - {{ member_item.username }}
+  ansible.builtin.debug:
+    msg:
+      - "Member: {{ member_item.username }}"
+      - "User ID: {{ member_user_id }}"
+      - "Project ID: {{ project_id }}"
+      - "Project Name: {{ project_name }}"
+      - "Role: {{ member_item.role }}"
+      - "Status: {{ 'Added' if member_add is changed else 'Updated' if member_update is changed else 'Already exists' }}"

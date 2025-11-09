@@ -1,0 +1,6 @@
+---
+- name: Include create-cluster tasks
+  ansible.builtin.import_tasks: create-cluster.yml
+
+- name: Include get-token tasks
+  ansible.builtin.import_tasks: get-token.yml

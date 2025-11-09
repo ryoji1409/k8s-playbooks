@@ -28,19 +28,20 @@
     group: root
     mode: '0755'
 
-- name: Pull Rancher Docker image
-  community.docker.docker_image:
-    name: "{{ rancher_docker_image }}"
-    source: pull
+- name: Deploy docker-compose.yml
+  become: true
+  ansible.builtin.template:
+    src: docker/docker-compose.yml.j2
+    dest: "{{ ansible_env.HOME }}/{{ rancher_compose_file }}"
+    owner: root
+    group: root
+    mode: "0644"
 
-- name: Run Rancher container
-  community.docker.docker_container:
-    name: rancher
-    image: "{{ rancher_docker_image }}"
-    restart_policy: unless-stopped
-    published_ports:
-      - "{{ rancher_http_port }}:80"
-      - "{{ rancher_https_port }}:443"
-    volumes:
-      - "{{ rancher_data_dir }}:/var/lib/rancher"
-    privileged: true
+- name: Compose up (create/start Rancher)
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ ansible_env.HOME }}"
+    files:
+      - "{{ rancher_compose_file }}"
+    state: present
+    pull: always

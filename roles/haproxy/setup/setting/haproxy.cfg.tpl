@@ -18,5 +18,5 @@
     backend control_plane_servers
         balance roundrobin
       {% for item in kube_control_plane %}
-        server {{ kube_control_plane[item].host_name }} {{ kube_control_plane[item].private_ip }}:6443 maxconn 32 check
+        server {{ kube_control_plane[item].host_name }} {{ kube_control_plane[item].internal_address }}:6443 maxconn 32 check
       {% endfor %}

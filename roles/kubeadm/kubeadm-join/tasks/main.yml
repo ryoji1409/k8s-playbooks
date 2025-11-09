@@ -9,7 +9,7 @@
     - name: Init k8s cluster
       ansible.builtin.shell: |
         kubeadm init --control-plane-endpoint "{{ kube_api_endpoint }}:{{ kube_api_endpoint_port }}" --upload-certs \
-        --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].private_ip }}" \
+        --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].internal_address }}" \
         {{ '--skip-phases=addon/kube-proxy' if (replacement_status | bool and cni_plugin == 'cilium') else '' }} --pod-network-cidr="{{ pod_network_cidr }}" \
         --service-cidr="{{ service_network_cidr }}"
       changed_when: false
@@ -52,7 +52,7 @@
         kubeadm join {{ kube_api_endpoint }}:{{ kube_api_endpoint_port }} --token {{ hostvars[groups['kube_control_plane'][0]].kubeadm_token[0] }} \
           --discovery-token-ca-cert-hash {{ hostvars[groups['kube_control_plane'][0]].discovery_hash[0] }} \
           --control-plane --certificate-key {{ hostvars[groups['kube_control_plane'][0]].certificate_key[0] }} \
-          --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].private_ip }}"
+          --apiserver-advertise-address="{{ kube_control_plane[inventory_hostname].internal_address }}"
       changed_when: false
     - name: Setup kube config
       ansible.builtin.shell: |

@@ -1,0 +1,7 @@
+---
+- name: Manage Rancher users
+  hosts: rancher_admin
+  gather_facts: false
+  roles:
+    - role: rancher/validate
+    - role: rancher/add-rancher-user

@@ -135,3 +135,23 @@ ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/run-ra
 ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/setup-rke2-k3s-nodes.yml \
   --ask-become-pass -u <your_remote_user>
 ```
+### Kubernetes cluster creation (Rancher (RKE2/K3S))
+```bash
+ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/create-k8s-cluster.yml \
+  --ask-become-pass -u <your_remote_user> -e "rancher_api_token=<token>"
+```
+### Add Rancher users
+```bash
+ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/add-rancher-user.yml \
+  --ask-become-pass -u <your_remote_user> -e "rancher_api_token=<token>"
+```
+### Create Rancher projects
+```bash
+ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/create-project.yml \
+  --ask-become-pass -u <your_remote_user> -e "rancher_api_token=<token>"
+```
+### Manage project members
+```bash
+ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/manage-project-members.yml \
+  --ask-become-pass -u <your_remote_user> -e "rancher_api_token=<token>"
+```
