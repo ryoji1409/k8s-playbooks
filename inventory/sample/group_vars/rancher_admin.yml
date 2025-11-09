@@ -27,9 +27,13 @@ rancher_users:
     global_role: ["user"]                     # Standard user role
     cluster_roles:
       - cluster_id: "c-xxxxx"               # Get cluster ID from Rancher UI: Admin → Clusters
-        role: "cluster-member"
+        roles:
+          - "cluster-member"
       - cluster_id: "c-yyyyy"
-        role: "cluster-member"
+        roles:
+          - "projects-view"
+          - "clustercatalogs-view"
+          - "nodes-view"
 
   - username: "bob.wilson"
     display_name: "Bob Wilson"
@@ -38,7 +42,8 @@ rancher_users:
     global_role: ["user"]                     # Standard user role
     cluster_roles:
       - cluster_id: "c-zzzzz"               # Get cluster ID from Rancher UI
-        role: "cluster-owner"
+        roles:
+          - "cluster-owner"
 
   - username: "user-admin"
     display_name: "User Administrator"
@@ -70,6 +75,21 @@ rancher_users:
     # - settings-manage: Manage Settings
     # - view-rancher-metrics: View Rancher Metrics
     # - features-manage: Configure Feature Flags
+
+    # Select a cluster_roles from the following roleTemplateId
+    # - cluster-owner: Cluster Owner
+    # - cluster-member: Cluster Member
+    # - clustercatalogs-view : View Cluster Catalogs
+    # - backups-manage: Manage Cluster Backups
+    # - projects-view: View All Projects
+    # - projects-create: Create Projects
+    # - navlinks-manage: Manage Navlinks
+    # - clusterroletemplatebindings-view: View Cluster Members
+    # - clustercatalogs-manage: Manage Cluster Catalogs
+    # - nodes-view: View Nodes
+    # - clusterroletemplatebindings-manage: Manage Cluster Members
+    # - storage-manage: Manage Storage
+    # - nodes-manage: Manage Nodes
 
 rancher_projects:
   - name: "production"

@@ -6,7 +6,7 @@
       - "{{ rancher_project_members }}"
   run_once: true
 
-- name: Set members list from file or variable
+- name: Set members list from variable
   ansible.builtin.set_fact:
     members_to_manage: "{{ rancher_project_members }}"
   run_once: true

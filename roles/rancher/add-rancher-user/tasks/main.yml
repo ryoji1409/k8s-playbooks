@@ -1,5 +1,5 @@
 ---
-- name: Set users list from file or variable
+- name: Set users list from variable
   ansible.builtin.set_fact:
     users_to_manage: "{{ rancher_users }}"
   run_once: true

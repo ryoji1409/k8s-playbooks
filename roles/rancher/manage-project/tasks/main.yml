@@ -7,7 +7,7 @@
     - rancher_projects is not defined
   run_once: true
 
-- name: Set projects list from file or variable
+- name: Set projects list from variable
   ansible.builtin.set_fact:
     projects_to_manage: "{{ rancher_projects }}"
   run_once: true

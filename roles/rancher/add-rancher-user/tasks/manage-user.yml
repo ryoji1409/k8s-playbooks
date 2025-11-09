@@ -82,49 +82,109 @@
   changed_when: user_update.status in [200, 201]
   when: user_exists
 
-- name: Grant global permissions/role - {{ user_item.username }}
-  ansible.builtin.uri:
-    url: "{{ rancher_url }}/v3/globalrolebindings"
-    method: POST
-    headers:
-      Authorization: "bearer {{ rancher_api_token }}"
-      Content-Type: "application/json"
-    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
-    body_format: json
-    status_code: [200, 201, 422]
-    body:
-      type: globalRoleBinding
-      globalRoleId: "{{ item }}"
-      userId: "{{ user_create.json.id }}"
-  loop: "{{ user_item.global_role }}"
-  loop_control:
-    label: "{{ item }}"
-  register: global_role
-  when:
-    - user_item.global_role is defined
-    - not user_exists
-  changed_when: global_role.status in [200, 201]
+- name: Update global roles - {{ user_item.username }}
+  when: user_item.global_role is defined
+  block:
+    - name: Get existing global roles for user
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/globalrolebindings?userId={{ user_create.json.id }}"
+        method: GET
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        body_format: json
+        status_code: [200]
+      register: existing_global_roles
+      changed_when: false
 
-- name: Grant cluster role - {{ user_item.username }}
-  ansible.builtin.uri:
-    url: "{{ rancher_url }}/v3/clusterroletemplatebindings"
-    method: POST
-    headers:
-      Authorization: "bearer {{ rancher_api_token }}"
-      Content-Type: "application/json"
-    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
-    body_format: json
-    status_code: [200, 201, 422]
-    body:
-      type: clusterRoleTemplateBinding
-      clusterId: "{{ item.item.cluster_id }}"
-      roleTemplateId: "{{ item.item.role }}"
-      userPrincipalId: "local://{{ user_create.json.id }}"
-  loop: "{{ cluster_role_check.results | default([]) }}"
-  when:
-    - user_item.cluster_roles is defined and user_item.cluster_roles | length > 0
-    - not user_exists
-  changed_when: true
+    - name: Delete all existing global role bindings
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/globalrolebindings/{{ global_role_item.id }}"
+        method: DELETE
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        status_code: [200, 204]
+      loop: "{{ existing_global_roles.json.data | default([]) }}"
+      loop_control:
+        loop_var: global_role_item
+      register: delete_global_roles
+      changed_when: delete_global_roles.status in [200, 204]
+      when: existing_global_roles.json.data | default([]) | length > 0
+
+    - name: Grant global permissions/role
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/globalrolebindings"
+        method: POST
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+          Content-Type: "application/json"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        body_format: json
+        status_code: [200, 201, 422]
+        body:
+          type: globalRoleBinding
+          globalRoleId: "{{ item }}"
+          userId: "{{ user_create.json.id }}"
+      loop: "{{ user_item.global_role }}"
+      loop_control:
+        label: "{{ item }}"
+      register: global_role
+      changed_when: global_role.status in [200, 201]
+
+- name: Update cluster roles - {{ user_item.username }}
+  when: user_item.cluster_roles is defined and user_item.cluster_roles | length > 0
+  block:
+    - name: Get existing cluster roles for user
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/clusterroletemplatebindings?userId={{ user_create.json.id }}"
+        method: GET
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        body_format: json
+        status_code: [200]
+      register: existing_cluster_roles
+      changed_when: false
+
+    - name: Delete all existing cluster role bindings
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/clusterroletemplatebindings/{{ cluster_role_item.id }}"
+        method: DELETE
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        status_code: [200, 204]
+      loop: "{{ existing_cluster_roles.json.data | default([]) }}"
+      loop_control:
+        loop_var: cluster_role_item
+      register: delete_cluster_roles
+      changed_when: delete_cluster_roles.status in [200, 204]
+      when: existing_cluster_roles.json.data | default([]) | length > 0
+
+    - name: Grant cluster roles
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/clusterroletemplatebindings"
+        method: POST
+        headers:
+          Authorization: "bearer {{ rancher_api_token }}"
+          Content-Type: "application/json"
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+        body_format: json
+        status_code: [200, 201, 422]
+        body:
+          type: clusterRoleTemplateBinding
+          clusterId: "{{ cluster_item.0.cluster_id }}"
+          roleTemplateId: "{{ role_item }}"
+          userPrincipalId: "local://{{ user_create.json.id }}"
+      loop: "{{ user_item.cluster_roles | subelements('roles') }}"
+      loop_control:
+        loop_var: cluster_item
+        label: "{{ cluster_item.0.cluster_id }} - {{ cluster_item.1 }}"
+      vars:
+        role_item: "{{ cluster_item.1 }}"
+      register: cluster_roles_result
+      changed_when: cluster_roles_result.status in [200, 201]
 
 - name: Display user details - {{ user_item.username }}
   ansible.builtin.debug:
