@@ -5,6 +5,18 @@ service_network_cidr: 10.96.0.0/12
 kube_api_endpoint: control.plane.endpoint
 kube_api_endpoint_port: 6443
 
+# https://www.suse.com/suse-rancher/support-matrix/all-supported-versions
+# https://github.com/rancher/rke2/tags
+# https://kubernetes.io/releases/
+kubectl_version: "v1.33.5"
+# https://github.com/containerd/nerdctl/releases
+nerdctl_version: "2.1.6"
+# https://github.com/etcd-io/etcd/releases
+etcd_version: "3.5.21"
+
+cilium_version: "1.17.6"  # https://github.com/cilium/cilium/releases
+flannel_version: "latest"  # https://github.com/flannel-io/flannel/releases
+calico_version: "v3.30.2"  # https://github.com/projectcalico/calico/releases
 cilium_namespace: kube-system
 cilium_helm_repo: https://helm.cilium.io/
 cilium_helm_chart: cilium/cilium

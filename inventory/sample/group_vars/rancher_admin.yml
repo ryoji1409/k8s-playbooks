@@ -1,9 +1,18 @@
 ---
+# https://hub.docker.com/r/rancher/rancher/tags
+rancher_version: "v2.12.3"
+rancher_docker_image: "rancher/rancher:{{ rancher_version }}"
+rancher_data_dir: "/opt/rancher"
+rancher_compose_file: docker-compose.yml
+rancher_container_name: rancher
+rancher_http_port: 80
+rancher_https_port: 443
+
 rancher_url: "https://10.0.0.14"
 cluster_name: "sample-cluster"
 # cluster_id: "c-xxxxx"  # Cluster Management -> YAML -> clusterName
 cluster_namespace: "fleet-default"  # ui “namespace: fleet-default”
-kubernetes_version: "v1.32.9+rke2r1"  # https://github.com/rancher/rke2/tags
+kubernetes_version: "{{ kubectl_version }}+rke2r1"  # https://github.com/rancher/rke2/tags
 cni: "multus,canal"
 kubelet_args:
   - "max-pods=500"
