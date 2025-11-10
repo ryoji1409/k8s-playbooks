@@ -7,7 +7,7 @@
 
 - name: Check if project already exists - {{ project_item.name }}
   ansible.builtin.uri:
-    url: "{{ rancher_url }}/v3/projects?clusterId={{ cluster_id }}&name={{ project_item.name }}"
+    url: "{{ rancher_url }}/v3/projects?clusterId={{ project_item.cluster_id }}&name={{ project_item.name }}"
     method: GET
     headers:
       Authorization: "bearer {{ rancher_api_token }}"
@@ -29,7 +29,7 @@
     status_code: [200, 201, 422]
     body:
       type: project
-      clusterId: "{{ cluster_id }}"
+      clusterId: "{{ project_item.cluster_id }}"
       name: "{{ project_item.name }}"
       displayName: "{{ project_item.display_name | default(project_item.name) }}"
       description: "{{ project_item.description | default('') }}"
@@ -57,6 +57,6 @@
     msg:
       - "Project: {{ project_item.name }}"
       - "Display Name: {{ project_item.display_name | default(project_item.name) }}"
-      - "Cluster ID: {{ cluster_id }}"
+      - "Cluster ID: {{ project_item.cluster_id }}"
       - "Project ID: {{ project_id }}"
       - "Status: {{ 'Created' if project_create is changed else 'Already exists' }}"

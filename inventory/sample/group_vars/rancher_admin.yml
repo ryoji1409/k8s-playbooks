@@ -10,7 +10,6 @@ rancher_https_port: 443
 
 rancher_url: "https://10.0.0.14"
 cluster_name: "sample-cluster"
-# cluster_id: "c-xxxxx"  # Cluster Management -> YAML -> clusterName
 cluster_namespace: "fleet-default"  # ui “namespace: fleet-default”
 kubernetes_version: "{{ kubectl_version }}+rke2r1"  # https://github.com/rancher/rke2/tags
 cni: "multus,canal"
@@ -73,11 +72,9 @@ rancher_users:
     # - admin
     # - user: Standard user role
     # - user-base: Base user permissions
-    # - clustertemplaterevisions-create: Create RKE TEmplate Revisions
     # - authn-manage: Configure Authentication
     # - roles-manage: Manage Roles
     # - users-manage: Manage Users
-    # - clustertemplates-create: Create new RKE Cluster Templates
     # - kontainerdrivers-manage: Create new Cluster Drivers
     # - clusters-create: Create new Clusters
     # - nodedrivers-manage: Configure Node Drivers
@@ -102,6 +99,7 @@ rancher_users:
 
 rancher_projects:
   - name: "production"
+    cluster_id: "c-xxxxx"
     display_name: "Production Project"
     description: "Production environment project"
     limits_cpu: "2000m"
@@ -110,6 +108,7 @@ rancher_projects:
     requests_memory: "1024Mi"
 
   - name: "staging"
+    cluster_id: "c-xxxxx"
     display_name: "Staging Project"
     description: "Staging environment for testing"
     limits_cpu: "1000m"
@@ -118,6 +117,7 @@ rancher_projects:
     requests_memory: "512Mi"
 
   - name: "development"
+    cluster_id: "c-xxxxx"
     display_name: "Development Project"
     description: "Development environment"
     limits_cpu: "500m"
@@ -163,3 +163,5 @@ rancher_project_members_config:
         # - create-ns
         # - configmaps-manage
         # - persistentvolumeclaims-view
+        # View Project Catalogs ?
+        # Manage Project Catalogs ?
