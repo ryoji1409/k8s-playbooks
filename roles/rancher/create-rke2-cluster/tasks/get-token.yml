@@ -1,11 +1,11 @@
 ---
 - name: Lookup management cluster id (c-xxxxx) by name
   ansible.builtin.uri:
-    url: "{{ rancher_url }}/v3/clusters?name={{ cluster_name }}"
+    url: "{{ hostvars[groups['rancher_admin'][0]].rancher_url }}/v3/clusters?name={{ hostvars[groups['rancher_admin'][0]].cluster_name }}"
     method: GET
     headers:
       Authorization: "bearer {{ rancher_api_token }}"
-    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    validate_certs: "{{ not hostvars[groups['rancher_admin'][0]].rancher_insecure_ssl | bool }}"
     status_code: [200]
   register: mgmt_clusters
 
@@ -16,12 +16,12 @@
 
 - name: Ensure cluster registration token exists (v3)
   ansible.builtin.uri:
-    url: "{{ rancher_url }}/v3/clusterregistrationtokens"
+    url: "{{ hostvars[groups['rancher_admin'][0]].rancher_url }}/v3/clusterregistrationtokens"
     method: POST
     headers:
       Authorization: "bearer {{ rancher_api_token }}"
       Content-Type: "application/json"
-    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    validate_certs: "{{ not hostvars[groups['rancher_admin'][0]].rancher_insecure_ssl | bool }}"
     status_code: [201, 409]
     body_format: json
     body:
@@ -32,11 +32,11 @@
 
 - name: Get registration tokens for this cluster (v3)
   ansible.builtin.uri:
-    url: "{{ rancher_url }}/v3/clusterregistrationtokens?clusterId={{ mgmt_cluster_id }}"
+    url: "{{ hostvars[groups['rancher_admin'][0]].rancher_url }}/v3/clusterregistrationtokens?clusterId={{ mgmt_cluster_id }}"
     method: GET
     headers:
       Authorization: "bearer {{ rancher_api_token }}"
-    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+    validate_certs: "{{ not hostvars[groups['rancher_admin'][0]].rancher_insecure_ssl | bool }}"
     status_code: [200]
   register: tokens_list
 
@@ -48,7 +48,7 @@
 - name: Set base join command
   ansible.builtin.set_fact:
     base_join_cmd: >-
-      {{ (rancher_insecure_ssl | bool)
+      {{ (hostvars[groups['rancher_admin'][0]].rancher_insecure_ssl | bool)
            | ternary(reg_token.insecureNodeCommand, reg_token.nodeCommand) }}
   run_once: true
 

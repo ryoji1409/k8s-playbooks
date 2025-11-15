@@ -1,6 +1,6 @@
 ---
 - name: Provision RKE2 cluster via Rancher and register nodes
-  hosts: rancher_admin
+  hosts: kube_control_plane,kube_node
   gather_facts: false
   roles:
     - role: rancher/validate
