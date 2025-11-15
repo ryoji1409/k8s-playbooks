@@ -45,3 +45,17 @@
       - "{{ rancher_compose_file }}"
     state: present
     pull: always
+
+- name: Get Rancher bootstrap password
+  ansible.builtin.shell: |
+    docker logs rancher 2>&1 | grep "Bootstrap Password:"
+  register: rancher_bootstrap_raw
+  retries: 10
+  delay: 5
+  until: rancher_bootstrap_raw.stdout != ""
+  changed_when: false
+  failed_when: false
+
+- name: Show bootstrap password line
+  ansible.builtin.debug:
+    msg: "{{ rancher_bootstrap_raw.stdout }}"
