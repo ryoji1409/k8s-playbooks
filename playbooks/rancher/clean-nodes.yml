@@ -1,0 +1,9 @@
+---
+# https://ranchermanager.docs.rancher.com/how-to-guides/new-user-guides/manage-clusters/clean-cluster-nodes?k8s-distro=RKE2#what-gets-removed
+- name: Clean Rancher cluster nodes
+  hosts: kube_control_plane,kube_node
+  become: true
+  become_user: root
+  roles:
+    - role: rancher/clean-rancher-node
+  serial: 1

@@ -1,0 +1,109 @@
+---
+- name: Display cleanup warning
+  block:
+    - name: Show cleanup details
+      ansible.builtin.debug:
+        msg:
+          - WARNING: This playbook will clean the Rancher cluster node ({{ inventory_hostname }})
+          - Removing Rancher components (cattle-system, service accounts- , etc.)
+          - Removing RKE2/K3s agent components
+          - Deleting Kubernetes configuration and data directories
+          - Clearing container network interfaces
+          - Resetting iptables rules
+          - Restarting the node
+
+
+    - name: Confirm cleanup (skip with --extra-vars cleanup_confirm_skip=true)
+      ansible.builtin.pause:
+        prompt: "Are you sure you want to continue? (yes/no)"
+      register: cleanup_confirm
+      when: cleanup_confirm_skip is not defined or not cleanup_confirm_skip | bool
+
+    - name: Fail if not confirmed
+      ansible.builtin.fail:
+        msg: "Cleanup cancelled by user"
+      when:
+        - cleanup_confirm_skip is not defined or not cleanup_confirm_skip | bool
+        - cleanup_confirm.user_input | lower != 'yes'
+
+- name: Drain node from cluster
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  block:
+    - name: Get node name
+      ansible.builtin.shell: |
+        kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}' | grep -i "{{ inventory_hostname }}"
+      register: kubectl_node_name
+      changed_when: false
+
+    - name: Drain the node
+      ansible.builtin.command: kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml drain {{ kubectl_node_name.stdout }} --ignore-daemonsets --delete-emptydir-data --force
+      register: drain_result
+      retries: 5
+      delay: 5
+      until: drain_result.rc == 0
+      changed_when: false
+
+    - name: Show drain result
+      ansible.builtin.debug:
+        msg: "{{ drain_result.stdout_lines }}"
+
+    - name: Wait for drain to complete
+      ansible.builtin.pause:
+        seconds: 10
+      when: kubectl_node_name.stdout | length > 0
+
+- name: Cleanup single RKE2 node for reuse
+  block:
+    - name: Download system-agent-uninstall.sh
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/rancher/system-agent/main/system-agent-uninstall.sh
+        dest: /usr/local/sbin/system-agent-uninstall.sh
+        mode: "0755"
+
+    - name: Run system-agent-uninstall.sh (remove rancher-system-agent)
+      ansible.builtin.command: sh /usr/local/sbin/system-agent-uninstall.sh
+      register: system_agent_uninstall
+      failed_when: false
+      changed_when: false
+
+    - name: Show system-agent-uninstall result (for log)
+      ansible.builtin.debug:
+        var: system_agent_uninstall.stdout_lines
+
+    - name: Run rke2-uninstall.sh (remove RKE2)
+      ansible.builtin.command: rke2-uninstall.sh
+      register: rke2_uninstall
+      failed_when: false
+      changed_when: false
+
+    - name: Show rke2-uninstall result (for log)
+      ansible.builtin.debug:
+        var: rke2_uninstall.stdout_lines
+
+    - name: Remove RKE2 / Rancher related directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/ceph
+        - /etc/cni
+        - /etc/kubernetes
+        - /etc/rancher
+        - /opt/cni
+        - /run/calico
+        - /run/flannel
+        - /run/secrets/kubernetes.io
+        - /var/lib/calico
+        - /var/lib/cni
+        - /var/lib/etcd
+        - /var/lib/kubelet
+        - /var/lib/rancher
+        - /var/lib/weave
+        - /var/log/containers
+        - /var/log/pods
+        - /var/run/calico
+
+    - name: Reboot node to clear network interfaces and iptables
+      ansible.builtin.reboot:
+        msg: "Reboot after RKE2/Rancher cleanup"
+        reboot_timeout: 900
