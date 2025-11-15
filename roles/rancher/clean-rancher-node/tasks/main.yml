@@ -33,6 +33,10 @@
       ansible.builtin.shell: |
         kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}' | grep -i "{{ inventory_hostname }}"
       register: kubectl_node_name
+      retries: 5
+      delay: 5
+      until: kubectl_node_name.rc == 0
+      failed_when: false
       changed_when: false
 
     - name: Drain the node
@@ -41,15 +45,18 @@
       retries: 5
       delay: 5
       until: drain_result.rc == 0
+      failed_when: false
       changed_when: false
 
     - name: Show drain result
       ansible.builtin.debug:
         msg: "{{ drain_result.stdout_lines }}"
+      failed_when: false
 
     - name: Wait for drain to complete
       ansible.builtin.pause:
         seconds: 10
+      failed_when: false
       when: kubectl_node_name.stdout | length > 0
 
 - name: Cleanup single RKE2 node for reuse
