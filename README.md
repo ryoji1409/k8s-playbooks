@@ -161,8 +161,13 @@ source script/ssh-add.sh
   ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/manage-project-members.yml \
     --ask-become-pass -u <your_remote_user> -e "rancher_api_token=<token>"
   ```
-* Cleaning up nodes
+* Cleaning up nodes (except the initial control plane node)
   ```bash
   ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/clean-nodes.yml \
     --ask-become-pass -u <your_remote_user> -l node03,node04
+  ```
+* Cleaning up the initial control plane node
+  ```bash
+  ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/clean-control_plane01.yml \
+    --ask-become-pass -u <your_remote_user>
   ```

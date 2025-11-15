@@ -1,11 +1,16 @@
 ---
 - name: Display cleanup warning
   block:
-    - name: Show cleanup details
-      ansible.builtin.debug:
-        msg:
-          - WARNING: This playbook will clean the Rancher cluster node ({{ inventory_hostname }})
-          - Removing Rancher components (cattle-system, service accounts- , etc.)
+    - name: Confirm cleanup
+      ansible.builtin.pause:
+        prompt: |
+
+          ===============================
+          ⚠  WARNING: Cleanup Operation
+          ===============================
+          This playbook will clean the Rancher cluster node ({{ inventory_hostname }})
+
+          Removing Rancher components (cattle-system, service accounts- , etc.)
           - Removing RKE2/K3s agent components
           - Deleting Kubernetes configuration and data directories
           - Clearing container network interfaces
@@ -13,18 +18,10 @@
           - Restarting the node
 
 
-    - name: Confirm cleanup (skip with --extra-vars cleanup_confirm_skip=true)
-      ansible.builtin.pause:
-        prompt: "Are you sure you want to continue? (yes/no)"
+          Are you sure you want to continue?
+          Type "ctrl+C then C" to continue, or wait 10 seconds.
+        seconds: 10
       register: cleanup_confirm
-      when: cleanup_confirm_skip is not defined or not cleanup_confirm_skip | bool
-
-    - name: Fail if not confirmed
-      ansible.builtin.fail:
-        msg: "Cleanup cancelled by user"
-      when:
-        - cleanup_confirm_skip is not defined or not cleanup_confirm_skip | bool
-        - cleanup_confirm.user_input | lower != 'yes'
 
 - name: Drain node from cluster
   delegate_to: "{{ groups['kube_control_plane'][0] }}"
