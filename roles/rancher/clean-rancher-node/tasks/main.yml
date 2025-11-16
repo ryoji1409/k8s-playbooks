@@ -72,7 +72,9 @@
 
     - name: Show system-agent-uninstall result (for log)
       ansible.builtin.debug:
-        var: system_agent_uninstall.stdout_lines
+        msg: >-
+          {{ (system_agent_uninstall.stdout_lines | default([]))
+             + (system_agent_uninstall.stderr_lines | default([])) }}
 
     - name: Run rke2-uninstall.sh (remove RKE2)
       ansible.builtin.command: rke2-uninstall.sh
@@ -82,7 +84,9 @@
 
     - name: Show rke2-uninstall result (for log)
       ansible.builtin.debug:
-        var: rke2_uninstall.stdout_lines
+        msg: >-
+          {{ (rke2_uninstall.stdout_lines | default([]))
+             + (rke2_uninstall.stderr_lines | default([])) }}
 
     - name: Remove RKE2 / Rancher related directories
       ansible.builtin.file:
