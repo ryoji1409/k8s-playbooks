@@ -22,6 +22,9 @@ cilium_helm_repo: https://helm.cilium.io/
 cilium_helm_chart: cilium/cilium
 replacement_status: false  # true: without kube-proxy
 
+gpu_taints:
+  - "nvidia.com/gpu=true:NoSchedule"
+
 kube_control_plane:
   control_plane01:
     host_name: control_plane01

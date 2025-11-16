@@ -64,6 +64,11 @@
       --address {{ node_address }}
       --internal-address {{ node_internal_address }}
       --worker
+      {% if 'gpu_node' in group_names and gpu_taints is defined and gpu_taints | length > 0 %}
+      {% for t in gpu_taints %}
+      --taints {{ t }}
+      {% endfor %}
+      {% endif %}
 
   tasks:
     - name: Debug join command for worker
