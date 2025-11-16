@@ -5,5 +5,5 @@
   become: true
   become_user: root
   roles:
-    - role: rancher/clean-rancher-node
+    - role: rancher/clean-rke2-nodes
   serial: 1

@@ -21,7 +21,7 @@
   ansible.builtin.set_fact:
     user_exists: "{{ user_exists_check.json.data | length > 0 }}"
 
-- name: Generate random password if requested - {{ user_item.username }}
+- name: Generate random password - {{ user_item.username }}
   ansible.builtin.set_fact:
     user_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,@#$%') }}"
     password_generated: true
