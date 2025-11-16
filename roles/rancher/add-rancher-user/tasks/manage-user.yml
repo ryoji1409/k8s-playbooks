@@ -23,14 +23,8 @@
 
 - name: Generate random password if requested - {{ user_item.username }}
   ansible.builtin.set_fact:
-    user_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,punctuation') }}"
+    user_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,@#$%') }}"
     password_generated: true
-  when:
-    - not user_exists
-
-- name: Display generated password - {{ user_item.username }}
-  ansible.builtin.debug:
-    msg: "Generated password for user {{ user_item.username }}: {{ user_password }}"
   when:
     - not user_exists
 
@@ -55,7 +49,6 @@
   register: user_create
   changed_when: user_create.status in [200, 201]
   when: not user_exists
-  no_log: true
 
 - name: Get user ID if user already exists - {{ user_item.username }}
   ansible.builtin.set_fact:
@@ -190,6 +183,7 @@
   ansible.builtin.debug:
     msg:
       - "User: {{ user_item.username }}"
+      - "password: {{ user_password | default('') }}"
       - "Display Name: {{ user_item.display_name | default(user_item.username) }}"
       - "Status: {{ 'Created' if user_create is changed else 'Already exists' }}"
       - "Admin: {{ user_item.global_role | default(false) }}"
