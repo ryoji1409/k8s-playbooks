@@ -222,6 +222,7 @@
   block:
     - name: Install helm-diff plugin
       ansible.builtin.command: "helm plugin install https://github.com/databus23/helm-diff"
+      changed_when: false
     - name: Verify helm-diff plugin installation
       ansible.builtin.command: "helm plugin list"
       register: helm_plugin_list_after
