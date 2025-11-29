@@ -5,6 +5,10 @@
   when:
     - user_item.username is not defined or user_item.username | length == 0
 
+- name: Reset user_password for each user
+  ansible.builtin.set_fact:
+    user_password: ""
+
 - name: Check if user already exists - {{ user_item.username }}
   ansible.builtin.uri:
     url: "{{ rancher_url }}/v3/users?username={{ user_item.username }}"
