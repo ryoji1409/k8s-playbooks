@@ -6,3 +6,5 @@
   roles:
     - role: setup
     - role: install-tools
+  vars:
+    buildkit_containerd_flavor: "rke2"

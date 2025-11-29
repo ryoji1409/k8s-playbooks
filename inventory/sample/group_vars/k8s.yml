@@ -11,6 +11,12 @@ kube_api_endpoint_port: 6443
 kubectl_version: "v1.33.5"
 # https://github.com/containerd/nerdctl/releases
 nerdctl_version: "2.1.6"
+buildkit_version: "v0.26.2"
+buildkit_containerd_address_map:
+  rke2: "/run/k3s/containerd/containerd.sock"
+  kubeadm: "/run/containerd/containerd.sock"
+buildkit_containerd_address: "{{ buildkit_containerd_address_map[buildkit_containerd_flavor] }}"
+buildkit_containerd_namespace: "k8s.io"
 # https://github.com/etcd-io/etcd/releases
 etcd_version: "3.5.21"
 

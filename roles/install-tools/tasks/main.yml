@@ -90,6 +90,42 @@
         - "containerd-rootless-setuptool.sh"
         - "nerdctl-{{ nerdctl_version }}-linux-{{ arch_map[ansible_architecture] }}.tar.gz"
 
+- name: Install buildkit
+  block:
+    - name: Ensure config directory exists
+      ansible.builtin.file:
+        path: "/etc/buildkit"
+        state: directory
+        mode: "0755"
+    - name: Download buildkit archive
+      ansible.builtin.get_url:
+        url: "https://github.com/moby/buildkit/releases/download/{{ buildkit_version }}/buildkit-{{ buildkit_version }}.linux-{{ arch_map[ansible_architecture] }}.tar.gz"
+        dest: "/tmp/buildkit-{{ buildkit_version }}.linux-{{ arch_map[ansible_architecture] }}.tar.gz"
+        mode: "0644"
+    - name: Extract buildkit into /usr/local
+      ansible.builtin.unarchive:
+        src: "/tmp/buildkit-{{ buildkit_version }}.linux-{{ arch_map[ansible_architecture] }}.tar.gz"
+        dest: "/usr/local"
+        remote_src: true
+    - name: Deploy buildkitd.toml
+      ansible.builtin.template:
+        src: "buildkit/templates/buildkitd.toml.j2"
+        dest: "/etc/buildkit/buildkitd.toml"
+        mode: "0644"
+    - name: Deploy buildkit systemd unit
+      ansible.builtin.template:
+        src: "buildkit/templates/buildkit.service.j2"
+        dest: "/etc/systemd/system/buildkit.service"
+        mode: "0644"
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+    - name: Enable and start buildkitd
+      ansible.builtin.systemd:
+        name: buildkit
+        enabled: true
+        state: started
+
 - name: Install etcdctl
   when: "'kube_control_plane' in group_names"
   block:
