@@ -220,9 +220,16 @@
 - name: Install helm diff plugin
   when: "'kube_control_plane' in group_names"
   block:
+    - name: Check installed Helm plugins
+      ansible.builtin.shell: "helm plugin list | grep diff"
+      register: helm_plugin_list
+      changed_when: false
+      failed_when: false
     - name: Install helm-diff plugin
       ansible.builtin.command: "helm plugin install https://github.com/databus23/helm-diff"
       changed_when: false
+      when:
+        - '"diff" not in helm_plugin_list.stdout'
     - name: Verify helm-diff plugin installation
       ansible.builtin.command: "helm plugin list"
       register: helm_plugin_list_after
