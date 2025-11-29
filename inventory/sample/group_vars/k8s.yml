@@ -9,6 +9,8 @@ kube_api_endpoint_port: 6443
 # https://github.com/rancher/rke2/tags
 # https://kubernetes.io/releases/
 kubectl_version: "v1.33.5"
+# https://github.com/helmfile/helmfile/releases
+helmfile_version: "1.2.2"
 # https://github.com/containerd/nerdctl/releases
 nerdctl_version: "2.1.6"
 buildkit_version: "v0.26.2"

@@ -183,6 +183,53 @@
         name: "helm"
         update_cache: true
 
+- name: Install helmfile
+  when: "'kube_control_plane' in group_names"
+  block:
+    - name: Create temporary directory for helmfile archive
+      ansible.builtin.file:
+        path: "/tmp/helmfile"
+        state: directory
+        mode: "0755"
+    - name: Download helmfile binary archive
+      ansible.builtin.get_url:
+        url: "https://github.com/helmfile/helmfile/releases/download/v{{ helmfile_version }}/helmfile_{{ helmfile_version }}_linux_{{ arch_map[ansible_architecture] }}.tar.gz"
+        dest: "/tmp/helmfile/helmfile.tar.gz"
+        mode: "0644"
+    - name: Extract helmfile archive
+      ansible.builtin.unarchive:
+        src: "/tmp/helmfile/helmfile.tar.gz"
+        dest: "/tmp/helmfile/"
+        remote_src: true
+    - name: Install helmfile binary
+      ansible.builtin.copy:
+        src: "/tmp/helmfile/helmfile"
+        dest: "/usr/local/bin"
+        remote_src: true
+        mode: "0755"
+        owner: "root"
+        group: "root"
+    - name: Check helmfile version
+      ansible.builtin.command: "helmfile --version"
+      register: helmfile_version_check
+      changed_when: false
+    - name: Debug helmfile version
+      ansible.builtin.debug:
+        msg: "Installed {{ helmfile_version_check.stdout }}"
+
+- name: Install helm diff plugin
+  when: "'kube_control_plane' in group_names"
+  block:
+    - name: Install helm-diff plugin
+      ansible.builtin.command: "helm plugin install https://github.com/databus23/helm-diff"
+    - name: Verify helm-diff plugin installation
+      ansible.builtin.command: "helm plugin list"
+      register: helm_plugin_list_after
+      changed_when: false
+    - name: Debug helm plugins
+      ansible.builtin.debug:
+        msg: "{{ helm_plugin_list_after.stdout_lines }}"
+
 - name: Install Cilium CLI
   ansible.builtin.shell: |
     CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
