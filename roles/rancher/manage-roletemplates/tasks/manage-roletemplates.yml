@@ -1,0 +1,70 @@
+---
+- name: Fetch ALL existing RoleTemplates once
+  ansible.builtin.uri:
+    url: "{{ rancher_url }}/v3/roletemplates"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ rancher_api_token }}"
+    return_content: true
+    status_code: 200
+    validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+  register: rt_all
+
+- name: Manage RoleTemplate
+  vars:
+    matched_list: >-
+      {{ rt_all.json.data
+         | selectattr('name', 'equalto', roletemplates_item.name)
+         | list }}
+    exists: "{{ matched_list | length > 0 }}"
+    existing: "{{ matched_list[0] if exists else {} }}"
+    roletemplate_id: "{{ existing.id | default('') }}"
+  block:
+    - name: Create RoleTemplate - {{ roletemplates_item.name }}
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/roletemplates"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ rancher_api_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "{{ roletemplates_item.name }}"
+          context: "{{ roletemplates_item.context }}"
+          builtin: false
+          external: false
+          hidden: false
+          rules: "{{ roletemplates_item.rules }}"
+        status_code: 201
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+      when: roletemplate_id == ""
+      register: rt_create
+      changed_when: true
+    - name: Update RoleTemplate - {{ roletemplates_item.name }}
+      ansible.builtin.uri:
+        url: "{{ rancher_url }}/v3/roletemplates/{{ roletemplate_id }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ rancher_api_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: "{{ roletemplate_id }}"
+          type: "roleTemplate"
+          name: "{{ roletemplates_item.name }}"
+          context: "{{ roletemplates_item.context }}"
+          builtin: false
+          external: false
+          hidden: false
+          rules: "{{ roletemplates_item.rules }}"
+        status_code: 200
+        validate_certs: "{{ not rancher_insecure_ssl | bool }}"
+      when: roletemplate_id != ""
+      register: rt_update
+      changed_when: true
+    - name: Display RoleTemplate details - {{ roletemplates_item.name }}
+      ansible.builtin.debug:
+        msg:
+          - "Name: {{ roletemplates_item.name }}"
+          - "id: {{ rt_create.json.id if roletemplate_id == '' else roletemplate_id }}"
+          - "Status: {{ 'Created' if rt_create is changed else 'Already exists' }}"

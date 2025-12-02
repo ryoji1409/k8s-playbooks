@@ -1,0 +1,6 @@
+---
+- name: Manage Rancher RoleTemplates
+  hosts: rancher_admin
+  gather_facts: false
+  roles:
+    - role: rancher/manage-roletemplates

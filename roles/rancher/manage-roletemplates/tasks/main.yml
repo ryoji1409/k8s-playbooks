@@ -1,0 +1,28 @@
+---
+- name: Display summary
+  ansible.builtin.debug:
+    msg:
+      - "RoleTemplates"
+      - "{{ roletemplates }}"
+  run_once: true
+
+- name: Set RoleTemplates from variable
+  ansible.builtin.set_fact:
+    roletemplates_to_manage: "{{ roletemplates }}"
+  run_once: true
+
+- name: Manage RoleTemplates
+  ansible.builtin.include_tasks: manage-roletemplates.yml
+  loop: "{{ roletemplates_to_manage }}"
+  loop_control:
+    loop_var: roletemplates_item
+  run_once: true
+
+- name: Display RoleTemplates management summary
+  ansible.builtin.debug:
+    msg:
+      - "Rancher RoleTemplates management completed!"
+      - "Total RoleTemplates processed: {{ roletemplates_to_manage | length }}"
+      - "RoleTemplates:"
+      - "{{ roletemplates_to_manage | map(attribute='name') | list }}"
+  run_once: true
