@@ -3,6 +3,7 @@
 rancher_version: "v2.12.3"
 rancher_docker_image: "rancher/rancher:{{ rancher_version }}"
 rancher_data_dir: "/opt/rancher"
+rancher_auditlog_dir: "/var/log/rancher/auditlog"
 rancher_compose_file: docker-compose.yml
 rancher_container_name: rancher
 rancher_http_port: 80

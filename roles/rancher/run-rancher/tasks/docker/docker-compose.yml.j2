@@ -7,5 +7,12 @@ services:
     ports:
       - "{{ rancher_http_port }}:80"
       - "{{ rancher_https_port }}:443"
+    environment:
+      AUDIT_LOG_ENABLED: "true"
+      AUDIT_LEVEL: 1
+      AUDIT_LOG_MAXAGE: 10  # (Default) 10 days
+      AUDIT_LOG_MAXBACKUP: 10  # (Default) 10 files
+      AUDIT_LOG_MAXSIZE: 100  # (Default) 100M
     volumes:
       - "{{ rancher_data_dir }}:/var/lib/rancher"
+      - "{{ rancher_auditlog_dir }}:/var/log/auditlog"
