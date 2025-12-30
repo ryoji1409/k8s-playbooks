@@ -125,6 +125,29 @@
     enabled: true
   when: ansible_os_family == "Debian"
 
+- name: Set timezone
+  ansible.builtin.command: "timedatectl set-timezone {{ timezone }}"
+  changed_when: false
+
+- name: Ensure NTP is enabled
+  ansible.builtin.command: timedatectl set-ntp true
+  changed_when: false
+
+- name: Force time synchronization
+  ansible.builtin.command: chronyc makestep
+  register: chrony_makestep
+  changed_when: "'System clock was stepped' in chrony_makestep.stdout"
+  failed_when: false
+
+- name: Show chrony tracking status
+  ansible.builtin.command: chronyc tracking
+  register: chrony_tracking
+  changed_when: false
+
+- name: Debug chrony status
+  ansible.builtin.debug:
+    msg: "{{ chrony_tracking.stdout_lines }}"
+
 - name: Apt install misc packages
   ansible.builtin.apt:
     name: ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg']
