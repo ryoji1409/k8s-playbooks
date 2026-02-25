@@ -1,5 +1,7 @@
 ---
 - name: Display cleanup warning
+  tags:
+    - rancher-only
   block:
     - name: Confirm cleanup
       ansible.builtin.pause:
@@ -25,6 +27,8 @@
 
 - name: Drain node from cluster
   delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  tags:
+    - rancher-only
   block:
     - name: Get node name
       ansible.builtin.shell: |
@@ -56,7 +60,9 @@
       failed_when: false
       when: kubectl_node_name.stdout | length > 0
 
-- name: Cleanup single RKE2 node for reuse
+- name: Cleanup rancher-system-agent
+  tags:
+    - rancher-only
   block:
     - name: Download system-agent-uninstall.sh
       ansible.builtin.get_url:
@@ -76,6 +82,8 @@
           {{ (system_agent_uninstall.stdout_lines | default([]))
              + (system_agent_uninstall.stderr_lines | default([])) }}
 
+- name: Cleanup single RKE2 node for reuse
+  block:
     - name: Run rke2-uninstall.sh (remove RKE2)
       ansible.builtin.command: rke2-uninstall.sh
       register: rke2_uninstall

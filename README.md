@@ -171,6 +171,7 @@ source script/ssh-add.sh
   ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/clean-nodes.yml \
     --ask-become-pass -u <your_remote_user> -l node03,node04
   ```
+  * `--tags rancher-only`: Rancher cleanup only
 * Cleaning up the initial control plane node
   ```bash
   ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/clean-control_plane01.yml \
@@ -202,7 +203,7 @@ source script/ssh-add.sh
       ```bash
       curl -s https://api.github.com/repos/rancher/rke2/releases | grep tag_name
       ```
-* Add RKE2 nodes (include setup RKE2 nodes & )
+* Add RKE2 nodes
   ```bash
   ansible-playbook -i inventory/development/inventory.ini playbooks/rke2/add-rke2-nodes.yml \
     -l <new_node> --ask-become-pass -u <your_remote_user>
