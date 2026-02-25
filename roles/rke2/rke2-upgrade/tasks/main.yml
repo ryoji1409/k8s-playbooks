@@ -29,6 +29,7 @@
     INSTALL_RKE2_VERSION="{{ rke2_version }}" \
     INSTALL_RKE2_TYPE="{{ rke2_type }}" \
     sh /tmp/install-rke2.sh
+  changed_when: true
   when: upgrade_needed
 
 - name: Restart RKE2 service
