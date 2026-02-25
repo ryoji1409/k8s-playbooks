@@ -1,0 +1,5 @@
+---
+# ca_cert_files:
+#   - files/my-ca.crt
+#   - /path/to/another-ca.crt
+ca_cert_files: []
