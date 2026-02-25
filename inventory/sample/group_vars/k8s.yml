@@ -30,6 +30,46 @@ cilium_helm_repo: https://helm.cilium.io/
 cilium_helm_chart: cilium/cilium
 replacement_status: false  # true: without kube-proxy
 
+# RKE2 specific settings
+rke2_version: "{{ kubectl_version }}+rke2r1"
+rke2_channel: "stable"  # stable, latest, or specific version
+rke2_cni: "multus,canal"  # canal, cilium, calico, or none
+rke2_cluster_cidr: "{{ pod_network_cidr }}"
+rke2_service_cidr: "{{ service_network_cidr }}"
+rke2_data_dir: "/var/lib/rancher/rke2"
+rke2_config_dir: "/etc/rancher/rke2"
+rke2_install_script_url: "https://get.rke2.io"
+# RKE2 Kubelet arguments
+rke2_kubelet_args:
+  - "max-pods=500"
+# RKE2 Controller Manager arguments
+rke2_kube_controller_manager_args:
+  - "node-cidr-mask-size=22"
+  - "cert-dir=/var/lib/rancher/rke2/server/tls/kube-controller-manager"
+  - "secure-port=10257"
+# RKE2 Scheduler arguments
+rke2_kube_scheduler_args:
+  - "cert-dir=/var/lib/rancher/rke2/server/tls/kube-scheduler"
+  - "secure-port=10259"
+# RKE2 Extra mounts
+rke2_kube_controller_manager_extra_mount:
+  - "/var/lib/rancher/rke2/server/tls/kube-controller-manager:/var/lib/rancher/rke2/server/tls/kube-controller-manager"
+rke2_kube_scheduler_extra_mount:
+  - "/var/lib/rancher/rke2/server/tls/kube-scheduler:/var/lib/rancher/rke2/server/tls/kube-scheduler"
+# RKE2 Node labels
+rke2_node_labels:
+  - "cattle.io/os=linux"
+# RKE2 Control Plane taints
+rke2_control_plane_taints:
+  - "node-role.kubernetes.io/control-plane:NoSchedule"
+  - "node-role.kubernetes.io/etcd:NoExecute"
+# RKE2 Private registry configuration (optional)
+# rke2_private_registry_config: "/etc/rancher/rke2/registries.yaml"
+# RKE2 Agent token (optional, will use server token if not specified)
+# rke2_agent_token: ""
+# RKE2 Registration address
+registration_address: 10.0.0.5
+
 gpu_taints:
   - "nvidia.com/gpu=true:NoSchedule"
 

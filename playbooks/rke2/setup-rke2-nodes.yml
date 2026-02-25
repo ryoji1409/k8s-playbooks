@@ -1,0 +1,10 @@
+---
+- name: Setup RKE2 nodes
+  hosts: kube_control_plane,kube_node
+  become: true
+  become_user: root
+  roles:
+    - role: setup
+    - role: install-tools
+  vars:
+    buildkit_containerd_flavor: "rke2"

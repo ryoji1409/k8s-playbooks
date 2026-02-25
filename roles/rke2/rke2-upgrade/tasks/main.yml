@@ -1,0 +1,70 @@
+---
+- name: Check current RKE2 version
+  ansible.builtin.command: /usr/local/bin/rke2 --version
+  register: current_rke2_version
+  changed_when: false
+  failed_when: false
+
+- name: Display current version
+  ansible.builtin.debug:
+    msg: "Current RKE2 version: {{ current_rke2_version.stdout_lines[0] }}"
+
+- name: Check if upgrade is needed
+  ansible.builtin.set_fact:
+    upgrade_needed: "{{ rke2_version not in current_rke2_version.stdout }}"
+
+- name: Download RKE2 installation script
+  ansible.builtin.get_url:
+    url: "{{ rke2_install_script_url }}"
+    dest: /tmp/install-rke2.sh
+    mode: "0755"
+  when: upgrade_needed
+
+- name: Set RKE2 type based on node group
+  ansible.builtin.set_fact:
+    rke2_type: "{{ 'server' if 'kube_control_plane' in group_names else 'agent' }}"
+
+- name: Upgrade RKE2
+  ansible.builtin.shell: |
+    INSTALL_RKE2_VERSION="{{ rke2_version }}" \
+    INSTALL_RKE2_TYPE="{{ rke2_type }}" \
+    sh /tmp/install-rke2.sh
+  when: upgrade_needed
+
+- name: Restart RKE2 service
+  ansible.builtin.systemd:
+    name: "{{ 'rke2-server' if 'kube_control_plane' in group_names else 'rke2-agent' }}"
+    state: restarted
+    daemon_reload: true
+  when: upgrade_needed
+
+- name: Wait for RKE2 service to be active
+  ansible.builtin.systemd:
+    name: "{{ 'rke2-server' if 'kube_control_plane' in group_names else 'rke2-agent' }}"
+  register: rke2_service_check
+  until: rke2_service_check.status.ActiveState == 'active'
+  retries: 30
+  delay: 10
+  when: upgrade_needed
+
+- name: Verify upgraded RKE2 version
+  ansible.builtin.command: /usr/local/bin/rke2 --version
+  register: upgraded_rke2_version
+  changed_when: false
+  when: upgrade_needed
+
+- name: Display upgraded version
+  ansible.builtin.debug:
+    msg: "Upgraded RKE2 version: {{ upgraded_rke2_version.stdout_lines[0] }}"
+  when: upgrade_needed
+
+- name: Remove installation script
+  ansible.builtin.file:
+    path: /tmp/install-rke2.sh
+    state: absent
+  when: upgrade_needed
+
+- name: No upgrade needed
+  ansible.builtin.debug:
+    msg: "RKE2 is already at version {{ rke2_version }}, no upgrade needed"
+  when: not upgrade_needed

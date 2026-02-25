@@ -1,0 +1,96 @@
+---
+# RKE2 Server Configuration
+write-kubeconfig-mode: "0644"
+
+{% if kube_control_plane[inventory_hostname] is defined %}
+advertise-address: "{{ kube_control_plane[inventory_hostname].internal_address }}"
+{% endif %}
+
+{%- if rke2_agent_token is defined and rke2_agent_token | length > 0 %}
+agent-token: "{{ rke2_agent_token }}"
+{% endif %}
+
+cluster-cidr: "{{ rke2_cluster_cidr }}"
+service-cidr: "{{ rke2_service_cidr }}"
+{% if rke2_cni != 'none' %}
+cni:
+  - "{{ rke2_cni }}"
+{% else %}
+cni: []
+{% endif %}
+
+{% if rke2_kube_controller_manager_args is defined and rke2_kube_controller_manager_args | length > 0 %}
+kube-controller-manager-arg:
+{% for arg in rke2_kube_controller_manager_args %}
+  - "{{ arg }}"
+{% endfor %}
+{% endif %}
+
+{% if rke2_kube_controller_manager_extra_mount is defined and rke2_kube_controller_manager_extra_mount | length > 0 %}
+kube-controller-manager-extra-mount:
+{% for mount in rke2_kube_controller_manager_extra_mount %}
+  - "{{ mount }}"
+{% endfor %}
+{% endif %}
+
+{% if rke2_kube_scheduler_args is defined and rke2_kube_scheduler_args | length > 0 %}
+kube-scheduler-arg:
+{% for arg in rke2_kube_scheduler_args %}
+  - "{{ arg }}"
+{% endfor %}
+{% endif %}
+
+{% if rke2_kube_scheduler_extra_mount is defined and rke2_kube_scheduler_extra_mount | length > 0 %}
+kube-scheduler-extra-mount:
+{% for mount in rke2_kube_scheduler_extra_mount %}
+  - "{{ mount }}"
+{% endfor %}
+{% endif %}
+
+{% if rke2_kubelet_args is defined and rke2_kubelet_args | length > 0 %}
+kubelet-arg:
+{% for arg in rke2_kubelet_args %}
+  - "{{ arg }}"
+{% endfor %}
+{% endif %}
+
+{% if kube_control_plane[inventory_hostname] is defined %}
+{% if kube_control_plane[inventory_hostname].address is defined %}
+node-external-ip:
+  - "{{ kube_control_plane[inventory_hostname].address }}"
+{% endif %}
+node-ip:
+  - "{{ kube_control_plane[inventory_hostname].internal_address }}"
+{% endif %}
+
+{% if rke2_node_labels is defined and rke2_node_labels | length > 0 %}
+node-label:
+{% for label in rke2_node_labels %}
+  - "{{ label }}"
+{% endfor %}
+{% endif %}
+
+{% if rke2_control_plane_taints is defined and rke2_control_plane_taints | length > 0 %}
+node-taint:
+{% for taint in rke2_control_plane_taints %}
+  - "{{ taint }}"
+{% endfor %}
+{% endif %}
+
+{% if rke2_private_registry_config is defined and rke2_private_registry_config | length > 0 %}
+private-registry: "{{ rke2_private_registry_config }}"
+{% endif %}
+
+tls-san:
+  - "{{ kube_api_endpoint }}"
+  - "{{ control_plane_endpoint }}"
+{% if kube_control_plane is defined %}
+{% for node_name, node in kube_control_plane.items() %}
+  - "{{ node.address }}"
+  - "{{ node.internal_address }}"
+  - "{{ node.host_name }}"
+{% endfor %}
+{% endif %}
+
+disable:
+  - rke2-ingress-nginx
