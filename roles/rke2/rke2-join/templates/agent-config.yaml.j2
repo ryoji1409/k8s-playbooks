@@ -1,0 +1,44 @@
+---
+# RKE2 Agent Configuration (Worker Node)
+
+{% if rke2_kubelet_args is defined and rke2_kubelet_args | length > 0 %}
+kubelet-arg:
+{% for arg in rke2_kubelet_args %}
+  - "{{ arg }}"
+{% endfor %}
+{% endif %}
+
+{%- if kube_node[inventory_hostname] is defined %}
+{%- if kube_node[inventory_hostname].address is defined %}
+node-external-ip:
+  - "{{ kube_node[inventory_hostname].address }}"
+{% endif %}
+node-ip:
+  - "{{ kube_node[inventory_hostname].internal_address }}"
+{% endif %}
+
+{% if rke2_node_labels is defined and rke2_node_labels | length > 0 %}
+node-label:
+{% for label in rke2_node_labels %}
+  - "{{ label }}"
+{% endfor %}
+{%- endif %}
+
+{% if 'gpu_node' in group_names and gpu_taints is defined %}
+node-taint:
+{% for taint in gpu_taints %}
+  - "{{ taint }}"
+{% endfor %}
+{% endif %}
+
+{% if rke2_private_registry_config is defined and rke2_private_registry_config | length > 0 %}
+private-registry: "{{ rke2_private_registry_config }}"
+{% endif %}
+
+server: https://{{ registration_address }}:9345
+
+{% if rke2_agent_token is defined and rke2_agent_token | length > 0 %}
+token: "{{ rke2_agent_token }}"
+{%- else %}
+token: "{{ rke2_token }}"
+{% endif %}

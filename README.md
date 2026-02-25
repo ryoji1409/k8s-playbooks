@@ -176,3 +176,44 @@ source script/ssh-add.sh
   ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/clean-control_plane01.yml \
     --ask-become-pass -u <your_remote_user>
   ```
+### RKE2
+* Setup RKE2 nodes
+  ```bash
+  ansible-playbook -i inventory/development/inventory.ini playbooks/rke2/setup-rke2-nodes.yml \
+    --ask-become-pass -u <your_remote_user>
+  ```
+* Create RKE2 cluster
+  ```bash
+  ansible-playbook -i inventory/development/inventory.ini playbooks/rke2/create-rke2-cluster.yml \
+    --ask-become-pass -u <your_remote_user>
+  ```
+    * Execution Steps:
+        1. Install RKE2 on all nodes
+        1. Initialize the first control plane node
+        1. Join the remaining control plane nodes to the cluster
+        1. Join the worker nodes to the cluster
+        1. Display the cluster information
+* Upgrade RKE2 cluster
+  ```bash
+  ansible-playbook -i inventory/development/inventory.ini playbooks/rke2/upgrade-rke2-cluster.yml \
+    --ask-become-pass -u <your_remote_user>
+  ```
+  * available versions
+      ```bash
+      curl -s https://api.github.com/repos/rancher/rke2/releases | grep tag_name
+      ```
+* Add RKE2 nodes (include setup RKE2 nodes & )
+  ```bash
+  ansible-playbook -i inventory/development/inventory.ini playbooks/rke2/add-rke2-nodes.yml \
+    -l <new_node> --ask-become-pass -u <your_remote_user>
+  ```
+  * Execution Steps:
+      1. Retrieve the token from the existing cluster
+      1. Set up the new node
+      1. Install RKE2
+      1. Join the cluster
+* Clean RKE2 nodes
+  ```bash
+  ansible-playbook -i inventory/development/inventory.ini playbooks/rke2/clean-rke2-nodes.yml \
+    -l <node_to_clean> --ask-become-pass -u <your_remote_user>
+  ```

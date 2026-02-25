@@ -1,0 +1,24 @@
+---
+- name: Clean RKE2 worker nodes
+  hosts: kube_node
+  become: true
+  become_user: root
+  roles:
+    - role: rke2/rke2-cleanup
+  serial: 1
+
+- name: Clean RKE2 control-plane/etcd nodes
+  hosts: kube_control_plane,!kube_control_plane[0]
+  become: true
+  become_user: root
+  roles:
+    - role: rke2/rke2-cleanup
+  serial: 1
+
+- name: Clean RKE2 first control-plane/etcd nodes
+  hosts: kube_control_plane[0]
+  become: true
+  become_user: root
+  roles:
+    - role: rke2/rke2-cleanup
+  serial: 1

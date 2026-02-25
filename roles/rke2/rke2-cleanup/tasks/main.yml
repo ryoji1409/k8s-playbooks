@@ -1,0 +1,125 @@
+---
+- name: Display cleanup warning
+  block:
+    - name: Confirm cleanup
+      ansible.builtin.pause:
+        prompt: |
+
+          ===============================
+          ⚠  WARNING: Cleanup Operation
+          ===============================
+          This playbook will clean the RKE2 node ({{ inventory_hostname }})
+
+          - Stopping RKE2 services
+          - Removing RKE2 components
+          - Deleting Kubernetes configuration and data directories
+          - Clearing container network interfaces
+          - Restarting the node
+
+
+          Are you sure you want to continue?
+          Type "ctrl+C then C" to continue, or wait 10 seconds.
+        seconds: 10
+      register: cleanup_confirm
+
+- name: Drain node from cluster
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  block:
+    - name: Get node name
+      ansible.builtin.shell: |
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig {{ rke2_data_dir }}/server/cred/admin.kubeconfig \
+        get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}' | grep -i "{{ inventory_hostname }}"
+      register: kubectl_node_name
+      retries: 5
+      delay: 5
+      until: kubectl_node_name.rc == 0
+      failed_when: false
+      changed_when: false
+
+    - name: Drain the node
+      ansible.builtin.command: >
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig {{ rke2_data_dir }}/server/cred/admin.kubeconfig drain {{ kubectl_node_name.stdout }} --ignore-daemonsets --delete-emptydir-data --force
+      register: drain_result
+      retries: 5
+      delay: 5
+      until: drain_result.rc == 0
+      failed_when: false
+      changed_when: false
+      when: kubectl_node_name.stdout | length > 0
+
+    - name: Show drain result
+      ansible.builtin.debug:
+        msg: "{{ drain_result.stdout_lines }}"
+      failed_when: false
+      when: kubectl_node_name.stdout | length > 0
+
+    - name: Wait for cleanup to stabilize
+      ansible.builtin.pause:
+        seconds: 10
+      failed_when: false
+      when: kubectl_node_name.stdout | length > 0
+
+    - name: Delete node from cluster
+      ansible.builtin.command: >
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig {{ rke2_data_dir }}/server/cred/admin.kubeconfig delete node {{ kubectl_node_name.stdout }}
+      register: delete_result
+      retries: 5
+      delay: 5
+      until: delete_result.rc == 0
+      failed_when: false
+      changed_when: false
+      when:
+        - kubectl_node_name.stdout | length > 0
+        - inventory_hostname != groups['kube_control_plane'][0]
+
+- name: Cleanup RKE2 node
+  block:
+    - name: Stop RKE2 services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop:
+        - rke2-server
+        - rke2-agent
+      failed_when: false
+
+    - name: Run rke2-uninstall.sh (remove RKE2)
+      ansible.builtin.command: rke2-uninstall.sh
+      register: rke2_uninstall
+      failed_when: false
+      changed_when: false
+
+    - name: Show rke2-uninstall result (for log)
+      ansible.builtin.debug:
+        msg: >-
+          {{ (rke2_uninstall.stdout_lines | default([]))
+             + (rke2_uninstall.stderr_lines | default([])) }}
+
+    - name: Remove RKE2 related directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/ceph
+        - /etc/cni
+        - /etc/kubernetes
+        - /etc/rancher
+        - /opt/cni
+        - /run/calico
+        - /run/flannel
+        - /run/secrets/kubernetes.io
+        - /var/lib/calico
+        - /var/lib/cni
+        - /var/lib/etcd
+        - /var/lib/kubelet
+        - /var/lib/rancher
+        - /var/lib/weave
+        - /var/log/containers
+        - /var/log/pods
+        - /var/run/calico
+
+    - name: Reboot node to clear network interfaces and iptables
+      ansible.builtin.reboot:
+        msg: "Reboot after RKE2 cleanup"
+        reboot_timeout: 900

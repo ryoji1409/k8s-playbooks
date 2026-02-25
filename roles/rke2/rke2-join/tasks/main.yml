@@ -1,0 +1,57 @@
+---
+- name: Check if RKE2 is already joined
+  ansible.builtin.systemd:
+    name: "{{ 'rke2-server' if 'kube_control_plane' in group_names else 'rke2-agent' }}"
+  register: rke2_service_status
+
+- name: Set RKE2 service name
+  ansible.builtin.set_fact:
+    rke2_service_name: "{{ 'rke2-server' if 'kube_control_plane' in group_names else 'rke2-agent' }}"
+
+- name: Create RKE2 configuration for server node
+  ansible.builtin.template:
+    src: server-config.yaml.j2
+    dest: "{{ rke2_config_dir }}/config.yaml"
+    mode: "0600"
+  when: "'kube_control_plane' in group_names"
+
+- name: Create RKE2 configuration for agent node
+  ansible.builtin.template:
+    src: agent-config.yaml.j2
+    dest: "{{ rke2_config_dir }}/config.yaml"
+    mode: "0600"
+  when: "'kube_node' in group_names"
+
+- name: Enable and start RKE2 service
+  ansible.builtin.systemd:
+    name: "{{ rke2_service_name }}"
+    enabled: true
+    state: started
+  when: rke2_service_status.status.ActiveState != 'active'
+
+- name: Wait for RKE2 service to be active
+  ansible.builtin.systemd:
+    name: "{{ rke2_service_name }}"
+  register: rke2_service_check
+  until: rke2_service_check.status.ActiveState == 'active'
+  retries: 30
+  delay: 10
+
+- name: Create kubeconfig directory for user (server nodes only)
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    mode: "0755"
+  when: "'kube_control_plane' in group_names"
+
+- name: Copy kubeconfig to user directory (server nodes only)
+  ansible.builtin.copy:
+    src: "{{ rke2_data_dir }}/server/cred/admin.kubeconfig"
+    dest: "{{ ansible_env.HOME }}/.kube/config"
+    remote_src: true
+    mode: "0600"
+  when: "'kube_control_plane' in group_names"
+
+- name: Display join status
+  ansible.builtin.debug:
+    msg: "Node {{ inventory_hostname }} joined as {{ 'server' if 'kube_control_plane' in group_names else 'agent' }}"
