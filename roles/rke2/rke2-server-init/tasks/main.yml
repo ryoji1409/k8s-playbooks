@@ -25,8 +25,7 @@
 
 - name: Wait for kubectl to be functional
   ansible.builtin.command: >
-    /var/lib/rancher/rke2/bin/kubectl --kubeconfig {{ rke2_data_dir }}/server/cred/admin.kubeconfig
-    get nodes
+    /var/lib/rancher/rke2/bin/kubectl --kubeconfig {{ rke2_data_dir }}/server/cred/admin.kubeconfig get nodes
   register: kubectl_get_nodes
   until: kubectl_get_nodes.rc == 0
   retries: 30

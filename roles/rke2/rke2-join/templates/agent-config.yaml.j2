@@ -8,14 +8,10 @@ kubelet-arg:
 {% endfor %}
 {% endif %}
 
-{%- if kube_node[inventory_hostname] is defined %}
-{%- if kube_node[inventory_hostname].address is defined %}
 node-external-ip:
   - "{{ kube_node[inventory_hostname].address }}"
-{% endif %}
 node-ip:
   - "{{ kube_node[inventory_hostname].internal_address }}"
-{% endif %}
 
 {% if rke2_node_labels is defined and rke2_node_labels | length > 0 %}
 node-label:
