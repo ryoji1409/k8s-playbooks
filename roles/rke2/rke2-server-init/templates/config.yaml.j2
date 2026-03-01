@@ -7,8 +7,14 @@ advertise-address: "{{ kube_control_plane[inventory_hostname].internal_address }
 agent-token: "{{ rke2_agent_token }}"
 {% endif %}
 
+{% if rke2_cluster_cidr is defined and rke2_cluster_cidr | length > 0 -%}
 cluster-cidr: "{{ rke2_cluster_cidr }}"
+{% endif %}
+
+{% if rke2_service_cidr is defined and rke2_service_cidr | length > 0 -%}
 service-cidr: "{{ rke2_service_cidr }}"
+{% endif %}
+
 cni: "{{ rke2_cni }}"
 
 {% if rke2_kube_controller_manager_args is defined and rke2_kube_controller_manager_args | length > 0 %}
@@ -80,5 +86,9 @@ tls-san:
 {% endfor %}
 {% endif %}
 
+{% if rke2_disable_packaged_components is defined and rke2_disable_packaged_components | length > 0 -%}
 disable:
-  - rke2-ingress-nginx
+{% for packaged_components in rke2_disable_packaged_components %}
+  - "{{ packaged_components }}"
+{% endfor %}
+{% endif %}

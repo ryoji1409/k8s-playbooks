@@ -39,7 +39,7 @@
 
 - name: Set RKE2 token fact
   ansible.builtin.set_fact:
-    rke2_token: "{{ rke2_node_token.content | b64decode | trim }}"
+    rke2_token: "{{ (rke2_node_token.content | b64decode | trim).split('::server:')[1] }}"
 
 - name: Create kubeconfig directory for user
   ansible.builtin.file:

@@ -64,11 +64,13 @@ rke2_control_plane_taints:
   - "node-role.kubernetes.io/control-plane:NoSchedule"
   - "node-role.kubernetes.io/etcd:NoExecute"
 # RKE2 Private registry configuration (optional)
-# rke2_private_registry_config: "/etc/rancher/rke2/registries.yaml"
+rke2_private_registry_config: "/etc/rancher/rke2/registries.yaml"
 # RKE2 Agent token (optional, will use server token if not specified)
 # rke2_agent_token: ""
 # RKE2 Registration address
 registration_address: 10.0.0.5
+# rke2_disable_packaged_components:
+#   - "rke2-ingress-nginx"
 
 gpu_taints:
   - "nvidia.com/gpu=true:NoSchedule"

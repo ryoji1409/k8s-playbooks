@@ -27,8 +27,6 @@
 
 - name: Drain node from cluster
   delegate_to: "{{ groups['kube_control_plane'][0] }}"
-  tags:
-    - rancher-only
   block:
     - name: Get node name
       ansible.builtin.shell: |
