@@ -78,15 +78,17 @@ private-registry: "{{ rke2_private_registry_config }}"
 server: https://{{ registration_address }}:9345
 
 tls-san:
-  - "{{ kube_api_endpoint }}"
-  - "{{ control_plane_endpoint }}"
-{% if kube_control_plane is defined %}
 {% for node_name, node in kube_control_plane.items() %}
   - "{{ node.address }}"
   - "{{ node.internal_address }}"
   - "{{ node.host_name }}"
 {% endfor %}
-{%- endif %}
+{% if kube_api_endpoint is defined %}
+  - "{{ kube_api_endpoint }}"
+{% endif -%}
+{% if control_plane_endpoint is defined %}
+  - "{{ control_plane_endpoint }}"
+{% endif %}
 
 token: "{{ rke2_token }}"
 

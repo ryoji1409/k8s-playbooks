@@ -76,14 +76,16 @@ private-registry: "{{ rke2_private_registry_config }}"
 {% endif %}
 
 tls-san:
-  - "{{ kube_api_endpoint }}"
-  - "{{ control_plane_endpoint }}"
-{% if kube_control_plane is defined %}
 {% for node_name, node in kube_control_plane.items() %}
   - "{{ node.address }}"
   - "{{ node.internal_address }}"
   - "{{ node.host_name }}"
 {% endfor %}
+{% if kube_api_endpoint is defined %}
+  - "{{ kube_api_endpoint }}"
+{% endif -%}
+{% if control_plane_endpoint is defined %}
+  - "{{ control_plane_endpoint }}"
 {% endif %}
 
 {% if rke2_disable_packaged_components is defined and rke2_disable_packaged_components | length > 0 -%}
