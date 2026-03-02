@@ -119,17 +119,11 @@ source script/ssh-add.sh
   ansible-playbook -i inventory/development/inventory.ini playbooks/kubeadm/remove-nodes.yml \
     --ask-become-pass -u <your_remote_user> -l control_plane02,node04
   ```
-* Destroy cluster
-  1. Reset and remove all nodes except the initial control plane node
-      ```bash
-      ansible-playbook -i inventory/development/inventory.ini playbooks/kubeadm/remove-nodes.yml \
-        --ask-become-pass -u <your_remote_user>
-      ```
-  1. Reset the initial control plane node
-      ```bash
-      ansible-playbook -i inventory/development/inventory.ini playbooks/kubeadm/remove-control_plane01.yml \
-        --ask-become-pass -u <your_remote_user>
-      ```
+* Destroy cluster (Reset and remove all nodes)
+  ```bash
+  ansible-playbook -i inventory/development/inventory.ini playbooks/kubeadm/remove-nodes.yml \
+    --ask-become-pass -u <your_remote_user>
+  ```
 ### Rancher(RKE2)
 * Rancher management node setup
   ```bash
@@ -166,17 +160,12 @@ source script/ssh-add.sh
   ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/manage-roletemplates.yml \
     --ask-become-pass -u <your_remote_user> -e "rancher_api_token=<token>"
   ```
-* Cleaning up nodes (except the initial control plane node)
+* Cleaning up nodes
   ```bash
   ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/clean-nodes.yml \
     --ask-become-pass -u <your_remote_user> -l node03,node04
   ```
   * `--tags rancher-only`: Rancher cleanup only
-* Cleaning up the initial control plane node
-  ```bash
-  ansible-playbook -i inventory/development/inventory.ini playbooks/rancher/clean-control_plane01.yml \
-    --ask-become-pass -u <your_remote_user>
-  ```
 ### RKE2
 * Setup RKE2 nodes
   ```bash
