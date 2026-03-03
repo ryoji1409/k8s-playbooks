@@ -55,7 +55,7 @@ source script/ssh-add.sh
   ```bash
   ansible-playbook -i inventory/development/inventory.ini playbooks/setup-ssh-keys.yml \
     --ask-become-pass --ask-pass \
-    -u <your_remote_user> -e "user=user" -e "key=~/.ssh/id_ed25519.pub"
+    -u <your_remote_user> -e "user=<ssh_authorized_user>" -e "key=~/.ssh/id_ed25519.pub"
   ```
 * Run this command on all hosts to confirm their IP addresses
   ```bash
