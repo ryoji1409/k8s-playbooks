@@ -1,6 +1,7 @@
 ---
 - name: Setup rke2 k3s nodes
   hosts: kube_control_plane,kube_node
+  gather_facts: true
   become: true
   become_user: root
   roles:
