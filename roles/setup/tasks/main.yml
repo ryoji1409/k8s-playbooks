@@ -112,47 +112,183 @@
   ansible.builtin.command: sysctl --system
   changed_when: false
 
-- name: Install chrony for time sync
-  ansible.builtin.package:
-    name: chrony
-    state: present
+- name: Configure timezone and time synchronization
+  block:
+    - name: Set timezone
+      ansible.builtin.command: "timedatectl set-timezone {{ timezone }}"
+      changed_when: false
 
-- name: Enable and start chrony (RedHat)
-  ansible.builtin.service:
-    name: chronyd
-    state: started
-    enabled: true
-  when: ansible_os_family == "RedHat"
+    - name: Check current time synchronization status
+      ansible.builtin.command: timedatectl status
+      register: setup_timedatectl_status
+      changed_when: false
 
-- name: Enable and start chrony (Ubuntu/Debian)
-  ansible.builtin.service:
-    name: chrony
-    state: started
-    enabled: true
-  when: ansible_os_family == "Debian"
+    - name: Debug timedatectl status
+      ansible.builtin.debug:
+        msg: "{{ setup_timedatectl_status.stdout_lines }}"
 
-- name: Set timezone
-  ansible.builtin.command: "timedatectl set-timezone {{ timezone }}"
-  changed_when: false
+    - name: Check if time is already synchronized
+      ansible.builtin.set_fact:
+        setup_time_synced: "{{ 'System clock synchronized: yes' in setup_timedatectl_status.stdout or 'NTP synchronized: yes' in setup_timedatectl_status.stdout }}"
 
-- name: Ensure NTP is enabled
-  ansible.builtin.command: timedatectl set-ntp true
-  changed_when: false
+    - name: Skip time sync setup if already synchronized
+      ansible.builtin.debug:
+        msg: "Time is already synchronized. Skipping time sync configuration."
+      when: setup_time_synced | bool
 
-- name: Force time synchronization
-  ansible.builtin.command: chronyc makestep
-  register: chrony_makestep
-  changed_when: "'System clock was stepped' in chrony_makestep.stdout"
-  failed_when: false
+- name: Check installed time sync packages
+  when: not (setup_time_synced | bool)
+  block:
+    - name: Check installed time sync packages (Debian/Ubuntu)
+      ansible.builtin.shell: |
+        dpkg -l systemd-timesyncd chrony ntp 2>/dev/null | grep '^ii' || true
+      register: setup_timesync_packages_deb
+      changed_when: false
+      when: ansible_os_family == "Debian"
 
-- name: Show chrony tracking status
-  ansible.builtin.command: chronyc tracking
-  register: chrony_tracking
-  changed_when: false
+    - name: Check if systemd-timesyncd binary exists (Debian/Ubuntu)
+      ansible.builtin.stat:
+        path: /lib/systemd/systemd-timesyncd
+      register: setup_systemd_timesyncd_binary_deb
+      when: ansible_os_family == "Debian"
 
-- name: Debug chrony status
-  ansible.builtin.debug:
-    msg: "{{ chrony_tracking.stdout_lines }}"
+    - name: Check installed time sync packages (RedHat)
+      ansible.builtin.shell: |
+        rpm -qa | grep -E '^(systemd-timesyncd|chrony|ntp)-' || true
+      register: setup_timesync_packages_rh
+      changed_when: false
+      when: ansible_os_family == "RedHat"
+
+    - name: Check if systemd-timesyncd binary exists (RedHat)
+      ansible.builtin.stat:
+        path: /usr/lib/systemd/systemd-timesyncd
+      register: setup_systemd_timesyncd_binary_rh
+      when: ansible_os_family == "RedHat"
+
+    - name: Parse installed packages (Debian/Ubuntu)
+      ansible.builtin.set_fact:
+        setup_systemd_timesyncd_installed: "{{ 'systemd-timesyncd' in setup_timesync_packages_deb.stdout or setup_systemd_timesyncd_binary_deb.stat.exists }}"
+        setup_chrony_installed: "{{ 'chrony' in setup_timesync_packages_deb.stdout }}"
+        setup_ntp_installed: "{{ 'ntp' in setup_timesync_packages_deb.stdout }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Parse installed packages (RedHat)
+      ansible.builtin.set_fact:
+        setup_systemd_timesyncd_installed: "{{ 'systemd-timesyncd' in setup_timesync_packages_rh.stdout or setup_systemd_timesyncd_binary_rh.stat.exists }}"
+        setup_chrony_installed: "{{ 'chrony' in setup_timesync_packages_rh.stdout }}"
+        setup_ntp_installed: "{{ 'ntp' in setup_timesync_packages_rh.stdout }}"
+      when: ansible_os_family == "RedHat"
+
+    - name: Show installed time sync packages
+      ansible.builtin.debug:
+        msg:
+          - "systemd-timesyncd installed: {{ setup_systemd_timesyncd_installed | default(false) }}"
+          - "chrony installed: {{ setup_chrony_installed | default(false) }}"
+          - "ntp installed: {{ setup_ntp_installed | default(false) }}"
+
+- name: Configure chrony (when chrony is installed)
+  when:
+    - not (setup_time_synced | bool)
+    - setup_chrony_installed | default(false)
+  block:
+    - name: Stop and disable systemd-timesyncd before enabling chrony
+      ansible.builtin.systemd:
+        name: systemd-timesyncd
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Enable and start chrony (RedHat)
+      ansible.builtin.service:
+        name: chronyd
+        state: started
+        enabled: true
+      when: ansible_os_family == "RedHat"
+
+    - name: Enable and start chrony (Ubuntu/Debian)
+      ansible.builtin.service:
+        name: chrony
+        state: started
+        enabled: true
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure NTP is enabled
+      ansible.builtin.command: timedatectl set-ntp true
+      register: setup_timedatectl_setntp
+      retries: 5
+      delay: 2
+      until: setup_timedatectl_setntp.rc == 0
+      changed_when: false
+      failed_when: false
+
+    - name: Force time synchronization with chrony
+      ansible.builtin.command: chronyc makestep
+      register: setup_chrony_makestep
+      changed_when: "'System clock was stepped' in setup_chrony_makestep.stdout"
+      failed_when: false
+
+    - name: Wait for chrony to synchronize
+      ansible.builtin.command: timedatectl status
+      register: setup_chrony_wait
+      retries: 10
+      delay: 2
+      until: "'System clock synchronized: yes' in setup_chrony_wait.stdout or 'NTP synchronized: yes' in setup_chrony_wait.stdout"
+      changed_when: false
+
+    - name: Show chrony tracking status
+      ansible.builtin.command: chronyc tracking
+      register: setup_chrony_tracking
+      changed_when: false
+
+    - name: Debug chrony status
+      ansible.builtin.debug:
+        msg: "{{ setup_chrony_tracking.stdout_lines }}"
+
+- name: Configure systemd-timesyncd (when chrony is not installed)
+  when:
+    - not (setup_time_synced | bool)
+    - not (setup_chrony_installed | default(false))
+  block:
+    - name: Install systemd-timesyncd if not present
+      ansible.builtin.package:
+        name: systemd-timesyncd
+        state: present
+      when: not (setup_systemd_timesyncd_installed | default(false))
+
+    - name: Enable and start systemd-timesyncd service
+      ansible.builtin.systemd:
+        name: systemd-timesyncd
+        state: started
+        enabled: true
+
+    - name: Enable NTP via timedatectl (systemd-timesyncd)
+      ansible.builtin.command: timedatectl set-ntp true
+      register: setup_timedatectl_setntp
+      retries: 5
+      delay: 2
+      until: setup_timedatectl_setntp.rc == 0
+      changed_when: false
+      failed_when: false
+
+    - name: Wait for systemd-timesyncd to synchronize
+      ansible.builtin.command: timedatectl status
+      register: setup_timesyncd_wait
+      retries: 10
+      delay: 2
+      until: "'System clock synchronized: yes' in setup_timesyncd_wait.stdout or 'NTP synchronized: yes' in setup_timesyncd_wait.stdout"
+      changed_when: false
+
+- name: Verify final time synchronization status
+  when: not (setup_time_synced | bool)
+  block:
+    - name: Final time synchronization status check
+      ansible.builtin.command: timedatectl status
+      register: setup_final_timedatectl_status
+      changed_when: false
+
+    - name: Display final synchronization status
+      ansible.builtin.debug:
+        msg: "{{ setup_final_timedatectl_status.stdout_lines }}"
 
 - name: Apt install misc packages
   ansible.builtin.apt:
