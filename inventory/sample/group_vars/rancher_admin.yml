@@ -18,6 +18,8 @@ kubelet_args:
   - "max-pods=500"
 kcm_args:
   - "node-cidr-mask-size=22"
+disable_system_services:
+  - "rke2-ingress-nginx"
 rancher_insecure_ssl: true
 
 rancher_users:

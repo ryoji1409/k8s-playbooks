@@ -31,6 +31,7 @@
         rkeConfig:
           machineGlobalConfig:
             cni: "{{ hostvars[groups['rancher_admin'][0]].cni }}"
+            "disable": "{{ hostvars[groups['rancher_admin'][0]].disable_system_services }}"
             "kubelet-arg": "{{ hostvars[groups['rancher_admin'][0]].kubelet_args }}"
             "kube-controller-manager-arg": "{{ hostvars[groups['rancher_admin'][0]].kcm_args }}"
           registries: {}
